@@ -1,0 +1,5405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>Who Want That Smoke – Stage Edition</title>
+
+<style>
+/* ===========================================================
+   BASE  THEME  +  GRID  LAYOUT
+   =========================================================== */
+:root {
+  --accent: #ff0066;
+  --bg: #0d0d0d;
+  --panel: #141414;
+  --text: #f5f5f5;
+  --font: 'Orbitron', sans-serif;
+}
+
+html,body{
+  margin:0;padding:0;
+  height:100%;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font);
+  overflow:hidden;
+}
+
+/* ---------- Ambient Layer ---------- */
+#ambientCanvas{
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background:radial-gradient(circle at 30% 30%,rgba(255,0,100,.08),transparent 60%),
+             radial-gradient(circle at 70% 70%,rgba(0,150,255,.08),transparent 60%);
+  animation:ambMove 20s infinite alternate ease-in-out;
+}
+@keyframes ambMove{
+  from{background-position:30% 30%,70% 70%;}
+  to{background-position:60% 40%,40% 60%;}
+}
+
+/* ---------- Header ---------- */
+#stageHeader{
+  position:fixed;
+  top:0;left:0;width:100%;height:54px;
+  background:#0b0b0b;
+  border-bottom:1px solid #222;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 14px;
+  z-index:9000;
+}
+#logoTitle{
+  font-size:1.1em;font-weight:600;color:var(--accent);letter-spacing:1px;
+}
+#headerBtns button{
+  background:none;border:none;color:var(--text);font-size:1.1em;
+  margin-left:10px;cursor:pointer;transition:color .2s ease,transform .2s ease;
+}
+#headerBtns button:hover{color:var(--accent);transform:scale(1.1);}
+#offlineBadge{
+  margin-left:10px;font-size:.8em;color:#888;
+}
+
+/* ---------- Stage Grid ---------- */
+#stage{
+  position:absolute;
+  top:54px;bottom:0;left:0;right:0;
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  grid-template-columns:1fr;
+  z-index:1;
+}
+
+/* ---------- Top Band ---------- */
+#titleBar{
+  text-align:center;
+  padding:8px 0;
+  font-size:1.4em;
+  color:var(--accent);
+  background:linear-gradient(90deg,#111,#0d0d0d,#111);
+  letter-spacing:1px;
+  box-shadow:0 1px 3px #000;
+}
+
+/* ---------- Middle Band: Panels + Center ---------- */
+#middleBand{
+  flex:1;
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  grid-template-rows:1fr;
+  gap:10px;
+  padding:10px 20px;
+  overflow:auto;
+}
+#leftCol,#centerStack,#rightCol{
+  background:var(--panel);
+  border:1px solid #222;
+  border-radius:10px;
+  padding:10px;
+  overflow-y:auto;
+}
+#centerStack{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+
+/* ---------- Bottom Band: Deck Zone ---------- */
+#deckZone{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  padding:10px 20px;
+  background:#0f0f0f;
+  border-top:1px solid #222;
+}
+.deck{
+  width:45%;
+  background:#141414;
+  border-radius:10px;
+  padding:10px;
+  border:1px solid #222;
+}
+#crossfaderWrap{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+}
+#cross{
+  width:80%;
+}
+
+/* ---------- Footer Bar ---------- */
+#footerBar{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:20px;
+  padding:10px;
+  border-top:1px solid #222;
+  background:#0b0b0b;
+}
+#footerBar button{
+  background:var(--accent);
+  border:none;
+  color:#fff;
+  border-radius:6px;
+  padding:6px 12px;
+  cursor:pointer;
+  transition:background .2s ease;
+}
+#footerBar button:hover{background:#ff3380;}
+
+/* ---------- Toast + SavePulse ---------- */
+#toast{
+  position:fixed;bottom:20px;right:20px;
+  background:#222;color:#fff;border-left:3px solid var(--accent);
+  padding:8px 12px;border-radius:6px;
+  opacity:0;transform:translateY(10px);
+  transition:opacity .3s ease,transform .3s ease;
+  z-index:9999;
+}
+#toast.show{opacity:1;transform:translateY(0);}
+#savePulse{
+  position:fixed;bottom:20px;right:10px;
+  width:10px;height:10px;border-radius:50%;
+  background:var(--accent);opacity:0;
+  transition:opacity .3s ease,box-shadow .3s ease;
+}
+#savePulse.active{opacity:1;box-shadow:0 0 10px 4px rgba(255,0,102,.4);}
+</style>
+</head>
+
+<body>
+
+  <!-- START: main content wrapper -->
+  <div id="mainWrap">
+
+    <div id="ambientCanvas"></div>
+
+    <header id="stageHeader">
+      <div id="logoTitle">Who Want That Smoke</div>
+      <div id="headerBtns">
+        <span id="offlineBadge">Offline</span>
+        <button id="homeBtn" title="Dashboard">🏠</button>
+        <button id="settingsBtn" title="Settings">⚙️</button>
+        <button id="exportBtn" title="Export">📤</button>
+        <input type="file" id="importFile" accept="application/json" hidden />
+        <button id="fullscreenBtn" title="Fullscreen">⛶</button>
+      </div>
+    </header>
+
+<div id="stage">
+  <div id="titleBar">Battle Stage</div>
+
+  <div id="middleBand">
+    <div id="leftCol"></div>
+    <div id="centerStack"></div>
+    <div id="rightCol"></div>
+  </div>
+
+  <div id="deckZone">
+    <div id="crossfaderWrap">
+      <input type="range" id="crossfader" min="0" max="1" step="0.01" value="0.5">
+    </div>
+  </div>
+
+  <div id="footerBar">
+    <button id="achievementsBtn">Achievements</button>
+    <button id="historyBtn">History</button>
+    <button id="notesBtn">Notes</button>
+    <button id="tournamentBtn">Tournament</button>
+    <button id="replayBtn">Replay</button>
+    <button id="biosBtn">Bios</button>
+  </div>
+</div>
+
+<div id="toast">Saved ✓</div>
+<div id="savePulse"></div>
+
+<script>
+/* ===========================================================
+   CORE  UTILITIES
+   =========================================================== */
+function showToast(msg="Saved ✓"){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),1500);
+}
+function flashSavePulse(){
+  const p=document.getElementById('savePulse');
+  p.classList.add('active');
+  setTimeout(()=>p.classList.remove('active'),800);
+}
+
+/* ---------- Fullscreen toggle ---------- */
+document.getElementById('fullscreenBtn').onclick=()=>{
+  if(!document.fullscreenElement){document.documentElement.requestFullscreen();}
+  else{document.exitFullscreen();}
+};
+
+/* ---------- Ambient loop (soft gradient drift) ---------- */
+let ambShift=0;
+setInterval(()=>{
+  ambShift=(ambShift+1)%360;
+  document.getElementById('ambientCanvas').style.filter=`hue-rotate(${ambShift}deg)`;
+},2000);
+</script>
+<script>
+/* ===========================================================
+   CHUNK 2 – CONTESTANT PANELS (A & B)
+   =========================================================== */
+
+/* ---------- DOM Injection ---------- */
+document.getElementById("leftCol").innerHTML = `
+  <div id="panelA" class="panel">
+    <div class="panelHead">
+      <input id="nameA" class="nameEdit" value="Contestant A" />
+      <button class="flipBtn" data-side="A">🌀</button>
+    </div>
+    <div class="scoreTotals">
+      <div>Total: <span id="totalA">0.00</span></div>
+      <div>Avg: <span id="avgA">0.00</span></div>
+    </div>
+    <div id="slidersA" class="sliders"></div>
+    <div class="bioCard hidden" id="bioA">
+      <img id="bioPhotoA" class="bioPhoto" src="" alt="">
+      <div class="bioStats" id="bioStatsA"></div>
+      <input id="bioPhotoInputA" type="text" placeholder="Photo URL or Data URL">
+      <button id="saveBioA">Save Bio</button>
+    </div>
+  </div>`;
+
+document.getElementById("rightCol").innerHTML = `
+  <div id="panelB" class="panel">
+    <div class="panelHead">
+      <input id="nameB" class="nameEdit" value="Contestant B" />
+      <button class="flipBtn" data-side="B">🌀</button>
+    </div>
+    <div class="scoreTotals">
+      <div>Total: <span id="totalB">0.00</span></div>
+      <div>Avg: <span id="avgB">0.00</span></div>
+    </div>
+    <div id="slidersB" class="sliders"></div>
+    <div class="bioCard hidden" id="bioB">
+      <img id="bioPhotoB" class="bioPhoto" src="" alt="">
+      <div class="bioStats" id="bioStatsB"></div>
+      <input id="bioPhotoInputB" type="text" placeholder="Photo URL or Data URL">
+      <button id="saveBioB">Save Bio</button>
+    </div>
+  </div>`;
+
+/* ---------- Styles for panels ---------- */
+const panelCSS = document.createElement("style");
+panelCSS.textContent = `
+.panel{display:flex;flex-direction:column;gap:8px;}
+.panelHead{display:flex;justify-content:space-between;align-items:center;}
+.nameEdit{background:#000;border:1px solid #333;color:var(--text);padding:4px 6px;border-radius:4px;width:70%;}
+.scoreTotals{display:flex;justify-content:space-between;font-size:.9em;margin-bottom:6px;}
+.sliders{display:flex;flex-direction:column;gap:4px;}
+.sliderRow{display:flex;align-items:center;gap:4px;}
+.sliderRow label{flex:1;}
+.sliderRow input[type=range]{flex:3;}
+.sliderRow input.weight{width:50px;background:#000;border:1px solid #333;color:#fff;border-radius:4px;text-align:center;}
+.sliderRow .val{width:40px;text-align:right;font-size:.9em;}
+.bioCard{position:relative;background:#111;padding:10px;border-radius:6px;border:1px solid #222;}
+.bioCard.hidden{display:none;}
+.bioPhoto{width:100%;border-radius:6px;object-fit:cover;}
+.flipBtn{background:none;border:none;color:var(--text);cursor:pointer;}
+.flipBtn:hover{color:var(--accent);}
+`;
+document.head.appendChild(panelCSS);
+
+/* ---------- Category Setup ---------- */
+const defaultCats = ["Creativity","Versatility","Mix","Drums","Melody","Bassline","Energy","Battle Ability","Arrangement","Sound Selection"];
+const defaultWeights = Array(defaultCats.length).fill(1);
+
+function renderSliders(side){
+  const container = document.getElementById("sliders"+side);
+  container.innerHTML = "";
+  defaultCats.forEach((cat,i)=>{
+    const row = document.createElement("div");
+    row.className="sliderRow";
+    row.innerHTML = `
+      <label contenteditable>${cat}</label>
+      <input type="range" min="0" max="10" step="0.01" value="0" data-cat="${cat}">
+      <input type="number" class="weight" min="0" max="1" step="0.01" value="${defaultWeights[i]}">
+      <span class="val">0.00</span>`;
+    container.appendChild(row);
+  });
+}
+renderSliders("A");
+renderSliders("B");
+
+/* ---------- Scoring Logic ---------- */
+function computePanel(side){
+  const sliders = document.querySelectorAll(`#sliders${side} .sliderRow`);
+  let sum = 0, count = 0;
+  sliders.forEach(r=>{
+    const range = r.querySelector('input[type=range]');
+    const w = parseFloat(r.querySelector('.weight').value)||0;
+    const val = parseFloat(range.value)||0;
+    const score = val*w;
+    sum += score; count++;
+    r.querySelector('.val').textContent = val.toFixed(2);
+  });
+  const avg = sum / count;
+  document.getElementById('total'+side).textContent = sum.toFixed(2);
+  document.getElementById('avg'+side).textContent = avg.toFixed(2);
+  flashSavePulse();
+  saveSession();
+}
+
+/* ---------- Event Binding ---------- */
+["A","B"].forEach(side=>{
+  document.querySelectorAll(`#sliders${side} input`).forEach(inp=>{
+    inp.addEventListener("input",()=>computePanel(side));
+  });
+  document.getElementById("name"+side).addEventListener("input",saveSession);
+});
+
+/* ---------- Bio Card Toggle ---------- */
+document.querySelectorAll(".flipBtn").forEach(btn=>{
+  btn.onclick = ()=>{
+    const s = btn.dataset.side;
+    const panel = document.getElementById("panel"+s);
+    const sliders = document.getElementById("sliders"+s);
+    const bio = document.getElementById("bio"+s);
+    const stats = document.getElementById("bioStats"+s);
+    if(bio.classList.contains("hidden")){
+      const wins=localStorage.getItem("bioWins"+s)||0;
+      const losses=localStorage.getItem("bioLosses"+s)||0;
+      stats.textContent = \`Wins \${wins} | Losses \${losses}\`;
+      sliders.style.display="none";
+      bio.classList.remove("hidden");
+    }else{
+      sliders.style.display="flex";
+      bio.classList.add("hidden");
+    }
+  };
+});
+
+/* ---------- Save Bio ---------- */
+["A","B"].forEach(side=>{
+  document.getElementById("saveBio"+side).onclick=()=>{
+    const url=document.getElementById("bioPhotoInput"+side).value;
+    document.getElementById("bioPhoto"+side).src=url;
+    localStorage.setItem("bioPhoto"+side,url);
+    showToast("Bio Saved");
+  };
+  const stored=localStorage.getItem("bioPhoto"+side);
+  if(stored){document.getElementById("bioPhoto"+side).src=stored;}
+});
+
+/* ---------- Session Save ---------- */
+function saveSession(){
+  const session={
+    A:document.getElementById("nameA").value,
+    B:document.getElementById("nameB").value,
+    valsA:[...document.querySelectorAll("#slidersA input[type=range]")].map(x=>parseFloat(x.value)||0),
+    valsB:[...document.querySelectorAll("#slidersB input[type=range]")].map(x=>parseFloat(x.value)||0),
+    weightsA:[...document.querySelectorAll("#slidersA .weight")].map(x=>parseFloat(x.value)||0),
+    weightsB:[...document.querySelectorAll("#slidersB .weight")].map(x=>parseFloat(x.value)||0)
+  };
+  localStorage.setItem("wwts_session",JSON.stringify(session));
+}
+
+/* ---------- Load on start ---------- */
+(function restoreSession(){
+  const s = localStorage.getItem("wwts_session");
+  if(!s) return;
+  const data = JSON.parse(s);
+  document.getElementById("nameA").value=data.A||"Contestant A";
+  document.getElementById("nameB").value=data.B||"Contestant B";
+  [...document.querySelectorAll("#slidersA .sliderRow")].forEach((r,i)=>{
+    const val=data.valsA?.[i]||0;const w=data.weightsA?.[i]||1;
+    r.querySelector('input[type=range]').value=val;
+    r.querySelector('.weight').value=w;
+    r.querySelector('.val').textContent=val.toFixed(2);
+  });
+  [...document.querySelectorAll("#slidersB .sliderRow")].forEach((r,i)=>{
+    const val=data.valsB?.[i]||0;const w=data.weightsB?.[i]||1;
+    r.querySelector('input[type=range]').value=val;
+    r.querySelector('.weight').value=w;
+    r.querySelector('.val').textContent=val.toFixed(2);
+  });
+  computePanel("A");
+  computePanel("B");
+})();
+/* ===========================================================
+   CHUNK 3 – CENTER STACK (Part A: HTML + CSS)
+   =========================================================== */
+
+/* ---------- DOM Injection ---------- */
+document.getElementById("centerStack").innerHTML = `
+  <div id="timerWrap">
+    <div id="battleTimer">03:00</div>
+    <div id="roundTracker">
+      <span class="roundDot active" data-round="0">●</span>
+      <span class="roundDot" data-round="1">○</span>
+      <span class="roundDot" data-round="2">○</span>
+    </div>
+    <div id="roundLabels">
+      <span class="roundLabel">Warm-Up</span>
+      <span class="roundLabel">Main</span>
+      <span class="roundLabel">Final</span>
+    </div>
+  </div>
+
+  <div id="controlsWrap">
+    <button id="startBattleBtn">Start Battle</button>
+    <button id="pauseBtn" disabled>Pause</button>
+    <button id="submitRoundBtn" disabled>Submit Round</button>
+    <button id="resetRoundBtn" disabled>Hold to Reset</button>
+    <label id="weightedToggleLbl">
+      <input type="checkbox" id="weightedToggle"> Weighted
+    </label>
+  </div>
+
+  <div id="miniBracketLane">Tournament Lane Preview</div>
+
+  <!-- Overlays -->
+  <div id="vsOverlay" class="hidden">
+    <div class="vsContent">
+      <img id="vsPhotoA" class="vsPhoto" src="">
+      <div id="vsNames">
+        <div id="vsNameA"></div>
+        <div id="vsVs">VS</div>
+        <div id="vsNameB"></div>
+      </div>
+      <img id="vsPhotoB" class="vsPhoto" src="">
+      <div id="vsRoundTag"></div>
+    </div>
+  </div>
+
+  <div id="winnerFlash" class="hidden">
+    <div id="winnerMsg"></div>
+  </div>
+`;
+
+/* ---------- Styles ---------- */
+const centerCSS = document.createElement("style");
+centerCSS.textContent = `
+#timerWrap{text-align:center;margin-bottom:10px;}
+#battleTimer{
+  font-size:2.2em;
+  letter-spacing:1px;
+  padding:6px 12px;
+  border-radius:6px;
+  background:#111;
+  display:inline-block;
+  transition:color .3s ease,background .3s ease;
+}
+#battleTimer.warning{color:#ff3333;background:#220000;}
+#roundTracker{margin-top:6px;}
+.roundDot{font-size:1.2em;margin:0 3px;cursor:pointer;}
+.roundDot.active{color:var(--accent);}
+#roundLabels{font-size:.75em;color:#888;margin-top:2px;}
+#controlsWrap{
+  display:flex;flex-wrap:wrap;gap:8px;justify-content:center;
+  margin-top:8px;
+}
+#controlsWrap button{
+  background:var(--accent);
+  border:none;color:#fff;padding:6px 12px;border-radius:6px;
+  cursor:pointer;transition:background .2s ease;
+}
+#controlsWrap button:hover:not(:disabled){background:#ff3380;}
+#controlsWrap button:disabled{opacity:.4;cursor:not-allowed;}
+#weightedToggleLbl{display:flex;align-items:center;gap:4px;font-size:.9em;color:#ccc;}
+
+#miniBracketLane{
+  width:100%;margin-top:12px;
+  background:#0f0f0f;border:1px solid #222;
+  border-radius:8px;text-align:center;
+  padding:6px;color:#777;font-size:.9em;
+}
+
+/* ---------- VS Overlay ---------- */
+#vsOverlay{
+  position:fixed;inset:0;z-index:9500;
+  background:rgba(0,0,0,.9);
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity .6s ease;
+}
+#vsOverlay.hidden{display:none;}
+.vsContent{display:flex;align-items:center;gap:20px;}
+.vsPhoto{width:180px;height:180px;object-fit:cover;border-radius:50%;border:3px solid var(--accent);}
+#vsNames{text-align:center;}
+#vsNameA,#vsNameB{font-size:1.5em;font-weight:bold;}
+#vsVs{font-size:2em;color:var(--accent);margin:6px 0;}
+#vsRoundTag{position:absolute;bottom:20px;width:100%;text-align:center;font-size:1.2em;color:var(--accent);}
+
+/* ---------- Winner Flash ---------- */
+#winnerFlash{
+  position:fixed;inset:0;z-index:9600;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.8);
+  animation:fadeOut 2.5s forwards;
+}
+#winnerFlash.hidden{display:none;}
+#winnerMsg{
+  font-size:2.2em;font-weight:bold;color:var(--accent);
+  background:#111;padding:20px 40px;border-radius:10px;
+  box-shadow:0 0 15px var(--accent);
+}
+@keyframes fadeOut{
+  0%{opacity:1;}90%{opacity:1;}100%{opacity:0;visibility:hidden;}
+}
+`;
+document.head.appendChild(centerCSS);
+/* ===========================================================
+   CHUNK 3 – CENTER STACK (Part B: Timer + Control Logic)
+   =========================================================== */
+
+let roundIndex = 0;
+let totalRounds = 3;
+let timerDuration = 180;     // seconds
+let timerRemaining = timerDuration;
+let timerInterval = null;
+let timerRunning = false;
+let timerAdaptive = false;
+
+/* ---------- Helpers ---------- */
+function formatTime(s){
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m.toString().padStart(2,"0")}:${sec.toString().padStart(2,"0")}`;
+}
+
+function updateTimerDisplay(){
+  const el = document.getElementById("battleTimer");
+  el.textContent = formatTime(timerRemaining);
+  if(timerRemaining <= 10 && timerRunning) el.classList.add("warning");
+  else el.classList.remove("warning");
+}
+
+/* ---------- Timer Control ---------- */
+function startTimer(){
+  if(timerRunning) return;
+  timerRunning = true;
+  document.getElementById("pauseBtn").disabled = false;
+  document.getElementById("submitRoundBtn").disabled = false;
+  timerInterval = setInterval(()=>{
+    timerRemaining--;
+    updateTimerDisplay();
+    if(timerRemaining <= 0){
+      endRound("time");
+    }
+  },1000);
+}
+
+function pauseTimer(){
+  if(!timerRunning) return;
+  clearInterval(timerInterval);
+  timerInterval = null;
+  timerRunning = false;
+  document.getElementById("pauseBtn").textContent = "Resume";
+}
+
+function resumeTimer(){
+  if(timerRunning) return;
+  document.getElementById("pauseBtn").textContent = "Pause";
+  timerRunning = true;
+  timerInterval = setInterval(()=>{
+    timerRemaining--;
+    updateTimerDisplay();
+    if(timerRemaining <= 0){
+      endRound("time");
+    }
+  },1000);
+}
+
+/* ---------- Button Events ---------- */
+const startBtn = document.getElementById("startBattleBtn");
+const pauseBtn = document.getElementById("pauseBtn");
+const submitBtn = document.getElementById("submitRoundBtn");
+const resetBtn = document.getElementById("resetRoundBtn");
+
+startBtn.onmouseenter = ()=>{
+  const preview = timerAdaptive ? "Track" : formatTime(timerDuration);
+  startBtn.title = `Timer: ${preview}`;
+};
+
+startBtn.onclick = ()=>{
+  document.getElementById("pauseBtn").textContent = "Pause";
+  pauseBtn.disabled = false;
+  submitBtn.disabled = false;
+  resetBtn.disabled = false;
+  timerRemaining = timerDuration;
+  updateTimerDisplay();
+  startTimer();
+  launchVSOverlay();
+};
+
+pauseBtn.onclick = ()=>{
+  if(timerRunning) pauseTimer(); else resumeTimer();
+};
+
+let resetHold;
+resetBtn.onmousedown = ()=>{
+  resetHold = setTimeout(()=>resetRound(),1000);
+};
+resetBtn.onmouseup = ()=>{
+  clearTimeout(resetHold);
+};
+resetBtn.onmouseleave = ()=>{
+  clearTimeout(resetHold);
+};
+
+submitBtn.onclick = ()=>endRound("manual");
+
+/* ---------- Round Tracker ---------- */
+function updateRoundTracker(){
+  document.querySelectorAll(".roundDot").forEach((dot,i)=>{
+    dot.textContent = i === roundIndex ? "●" : "○";
+    dot.classList.toggle("active", i === roundIndex);
+  });
+}
+
+/* ---------- End Round ---------- */
+function endRound(reason){
+  clearInterval(timerInterval);
+  timerInterval = null;
+  timerRunning = false;
+  document.getElementById("pauseBtn").disabled = true;
+  document.getElementById("submitRoundBtn").disabled = true;
+
+  // compute results
+  const totalA = parseFloat(document.getElementById("totalA").textContent);
+  const totalB = parseFloat(document.getElementById("totalB").textContent);
+  let winner = "Tie";
+  if(totalA > totalB) winner = "A";
+  else if(totalB > totalA) winner = "B";
+
+  // flash result
+  showWinnerFlash(winner, totalA, totalB);
+
+  // store to history snapshot
+  saveRoundSnapshot(winner, totalA, totalB);
+
+  showToast(`Round ${roundIndex+1} saved`);
+  if(roundIndex < totalRounds - 1){
+    roundIndex++;
+    updateRoundTracker();
+    // after 5s nudge Start Battle
+    setTimeout(()=>startBtn.classList.add("pulse"),5000);
+    setTimeout(()=>startBtn.classList.remove("pulse"),8000);
+  }else{
+    showToast("All rounds complete");
+  }
+}
+
+/* ---------- Reset Round ---------- */
+function resetRound(){
+  document.querySelectorAll("#slidersA input[type=range], #slidersB input[type=range]").forEach(inp=>{
+    inp.value = 0;
+  });
+  computePanel("A");
+  computePanel("B");
+  timerRemaining = timerDuration;
+  updateTimerDisplay();
+  showToast("Round reset");
+}
+
+/* ---------- Save Round Snapshot ---------- */
+function saveRoundSnapshot(winner,totalA,totalB){
+  const hkey = "wwts_history";
+  const data = JSON.parse(localStorage.getItem(hkey) || "[]");
+  const entry = {
+    date: new Date().toISOString(),
+    round: roundIndex+1,
+    totalRounds,
+    A: document.getElementById("nameA").value,
+    B: document.getElementById("nameB").value,
+    totalA, totalB, winner
+  };
+  data.push(entry);
+  localStorage.setItem(hkey, JSON.stringify(data));
+}
+/* ===========================================================
+   CHUNK 4 – DECK ZONE (Part A: HTML + CSS)
+   =========================================================== */
+
+document.getElementById("deckZone").innerHTML = `
+  <div id="decksWrap">
+    <!-- DECK A -->
+    <div class="deck" id="deckA">
+      <div class="deckHeader">
+        <span class="deckTitle">Deck A</span>
+        <input type="file" accept="audio/*" class="fileInput" id="fileA" />
+      </div>
+      <canvas class="waveCanvas" id="waveA"></canvas>
+      <div class="controlsRow">
+        <button class="playBtn" id="playA">▶</button>
+        <button class="pauseBtn" id="pauseA">⏸</button>
+        <button class="stopBtn" id="stopA">⏹</button>
+        <button class="loopBtn" id="loopA">⟳</button>
+        <button class="cueBtn" data-cue="1" data-deck="A">C1</button>
+        <button class="cueBtn" data-cue="2" data-deck="A">C2</button>
+        <button class="cueBtn" data-cue="3" data-deck="A">C3</button>
+      </div>
+      <div class="eqRow">
+        <label>Low<input type="range" id="lowA" min="0" max="2" step="0.01" value="1"></label>
+        <label>Mid<input type="range" id="midA" min="0" max="2" step="0.01" value="1"></label>
+        <label>High<input type="range" id="highA" min="0" max="2" step="0.01" value="1"></label>
+      </div>
+      <div class="vuMeter"><canvas id="vuA"></canvas></div>
+      <div class="deckDiag" id="diagA">CPU 0% | SR 44.1 kHz</div>
+    </div>
+
+    <!-- MIXER -->
+    <div id="mixer">
+      <input type="range" id="crossfader" min="0" max="1" step="0.01" value="0.5">
+      <div id="recordRow">
+        <button id="recordStart">● Record</button>
+        <button id="recordStop" disabled>■ Stop</button>
+        <button id="downloadMix" disabled>⬇ Download</button>
+      </div>
+      <div id="latencyLED" title="Latency OK"></div>
+    </div>
+
+    <!-- DECK B -->
+    <div class="deck" id="deckB">
+      <div class="deckHeader">
+        <span class="deckTitle">Deck B</span>
+        <input type="file" accept="audio/*" class="fileInput" id="fileB" />
+      </div>
+      <canvas class="waveCanvas" id="waveB"></canvas>
+      <div class="controlsRow">
+        <button class="playBtn" id="playB">▶</button>
+        <button class="pauseBtn" id="pauseB">⏸</button>
+        <button class="stopBtn" id="stopB">⏹</button>
+        <button class="loopBtn" id="loopB">⟳</button>
+        <button class="cueBtn" data-cue="1" data-deck="B">C1</button>
+        <button class="cueBtn" data-cue="2" data-deck="B">C2</button>
+        <button class="cueBtn" data-cue="3" data-deck="B">C3</button>
+      </div>
+      <div class="eqRow">
+        <label>Low<input type="range" id="lowB" min="0" max="2" step="0.01" value="1"></label>
+        <label>Mid<input type="range" id="midB" min="0" max="2" step="0.01" value="1"></label>
+        <label>High<input type="range" id="highB" min="0" max="2" step="0.01" value="1"></label>
+      </div>
+      <div class="vuMeter"><canvas id="vuB"></canvas></div>
+      <div class="deckDiag" id="diagB">CPU 0% | SR 44.1 kHz</div>
+    </div>
+  </div>
+`;
+
+const deckCSS = document.createElement("style");
+deckCSS.textContent = `
+#decksWrap{
+  display:flex;flex-wrap:wrap;justify-content:space-around;
+  background:#0b0b0b;border-radius:10px;padding:10px;gap:10px;
+}
+.deck{
+  width:340px;background:#111;border-radius:10px;padding:8px;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  box-shadow:0 0 8px #000 inset;
+}
+.deckHeader{display:flex;justify-content:space-between;width:100%;align-items:center;}
+.deckTitle{font-weight:bold;font-size:1.1em;color:var(--accent);}
+.fileInput{color:#ccc;width:160px;}
+.waveCanvas{
+  width:100%;height:60px;background:#000;border:1px solid #222;border-radius:4px;
+}
+.controlsRow{display:flex;gap:4px;justify-content:center;}
+.controlsRow button{
+  background:#222;border:none;color:#eee;border-radius:6px;
+  padding:4px 8px;cursor:pointer;transition:background .2s;
+}
+.controlsRow button:hover{background:var(--accent);}
+.eqRow{
+  display:flex;justify-content:space-evenly;width:100%;
+  background:#141414;border-radius:6px;padding:3px;
+}
+.eqRow label{font-size:.75em;color:#999;display:flex;flex-direction:column;align-items:center;}
+.eqRow input[type=range]{width:60px;}
+.vuMeter canvas{width:100%;height:8px;background:#000;border-radius:4px;}
+.deckDiag{font-size:.7em;color:#777;margin-top:2px;text-align:center;}
+#mixer{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:#111;padding:6px;border-radius:10px;
+}
+#crossfader{width:200px;}
+#recordRow{display:flex;gap:6px;margin-top:6px;}
+#recordRow button{
+  background:#333;border:none;color:#fff;padding:4px 8px;border-radius:6px;cursor:pointer;
+}
+#recordRow button:hover:not(:disabled){background:var(--accent);}
+#latencyLED{
+  width:10px;height:10px;border-radius:50%;background:lime;margin-top:6px;
+}
+#latencyLED.bad{background:red;}
+`;
+document.head.appendChild(deckCSS);
+/* ===========================================================
+   CHUNK 4B-1 – Audio Engine Setup + Track Loading
+   =========================================================== */
+
+const decks = {
+  A:{ctx:null,src:null,gain:null,analyser:null,eq:{low:null,mid:null,high:null},buf:null,pos:0,isPlaying:false,loop:false},
+  B:{ctx:null,src:null,gain:null,analyser:null,eq:{low:null,mid:null,high:null},buf:null,pos:0,isPlaying:false,loop:false}
+};
+const recState={rec:false,chunks:[],dest:null,stream:null,recorder:null};
+
+function initDeck(id){
+  const d=decks[id];
+  d.ctx=new (window.AudioContext||window.webkitAudioContext)();
+  d.gain=d.ctx.createGain();
+  d.eq.low=d.ctx.createBiquadFilter(); d.eq.low.type="lowshelf";
+  d.eq.mid=d.ctx.createBiquadFilter(); d.eq.mid.type="peaking";
+  d.eq.high=d.ctx.createBiquadFilter(); d.eq.high.type="highshelf";
+  d.analyser=d.ctx.createAnalyser(); d.analyser.fftSize=256;
+
+  d.eq.low.frequency.value=200;
+  d.eq.mid.frequency.value=1000;
+  d.eq.high.frequency.value=5000;
+
+  d.eq.low.connect(d.eq.mid);
+  d.eq.mid.connect(d.eq.high);
+  d.eq.high.connect(d.gain);
+  d.gain.connect(d.analyser);
+
+  updateDiag(id,`CPU 0% | SR ${Math.round(d.ctx.sampleRate/1000)*1} kHz`);
+}
+["A","B"].forEach(initDeck);
+
+/* ---------- File Load ---------- */
+async function loadFile(deckId,file){
+  const d=decks[deckId];
+  const arrayBuf=await file.arrayBuffer();
+  d.buf=await d.ctx.decodeAudioData(arrayBuf);
+  localStorage.setItem(`deck_${deckId}_name`,file.name);
+  localStorage.setItem(`deck_${deckId}_data`,arrayBufToBase64(arrayBuf));
+  drawWaveform(deckId,d.buf);
+  showToast(`${file.name} loaded on Deck ${deckId}`);
+}
+
+function arrayBufToBase64(buf){
+  let bin=''; const bytes=new Uint8Array(buf);
+  const len=bytes.byteLength;
+  for(let i=0;i<len;i++){bin+=String.fromCharCode(bytes[i]);}
+  return btoa(bin);
+}
+
+/* ---------- Event Bind ---------- */
+document.getElementById("fileA").onchange=e=>loadFile("A",e.target.files[0]);
+document.getElementById("fileB").onchange=e=>loadFile("B",e.target.files[0]);
+/* ===========================================================
+   CHUNK 4B-2 – Playback Logic + Mix + Analyser Updates
+   =========================================================== */
+
+/* ---------- Playback ---------- */
+function playDeck(id){
+  const d = decks[id];
+  if (!d.buf || d.isPlaying) return;
+  const src = d.ctx.createBufferSource();
+  src.buffer = d.buf;
+  src.loop = d.loop;
+  src.connect(d.eq.low);
+  src.start(0, d.pos);
+  d.startTime = d.ctx.currentTime - d.pos;
+  d.src = src;
+  d.isPlaying = true;
+  requestAnimationFrame(()=>updateVU(id));
+}
+
+function pauseDeck(id){
+  const d = decks[id];
+  if(!d.isPlaying) return;
+  d.src.stop();
+  d.pos = d.ctx.currentTime - d.startTime;
+  d.isPlaying = false;
+}
+
+function stopDeck(id){
+  const d = decks[id];
+  if(d.isPlaying){ d.src.stop(); }
+  d.pos = 0;
+  d.isPlaying = false;
+  updateVU(id,true);
+}
+
+function toggleLoop(id){
+  const d = decks[id];
+  d.loop = !d.loop;
+  showToast(`Loop ${d.loop ? "On" : "Off"} for Deck ${id}`);
+}
+
+["A","B"].forEach(id=>{
+  document.getElementById(`play${id}`).onclick=()=>playDeck(id);
+  document.getElementById(`pause${id}`).onclick=()=>pauseDeck(id);
+  document.getElementById(`stop${id}`).onclick=()=>stopDeck(id);
+  document.getElementById(`loop${id}`).onclick=()=>toggleLoop(id);
+});
+
+/* ---------- Crossfader ---------- */
+const cross = document.getElementById("crossfader");
+cross.oninput = ()=>{
+  const pos = parseFloat(cross.value);
+  decks.A.gain.gain.value = 1 - Math.pow(pos,2);
+  decks.B.gain.gain.value = Math.pow(pos,2);
+};
+
+/* ---------- EQ ---------- */
+["A","B"].forEach(id=>{
+  ["low","mid","high"].forEach(band=>{
+    const el = document.getElementById(`${band}${id}`);
+    el.oninput = ()=>{
+      const d = decks[id];
+      const val = parseFloat(el.value);
+      if(band==="low") d.eq.low.gain.value=(val-1)*10;
+      if(band==="mid") d.eq.mid.gain.value=(val-1)*8;
+      if(band==="high") d.eq.high.gain.value=(val-1)*6;
+    };
+  });
+});
+
+/* ---------- Mixer Output ---------- */
+const mixCtx = new AudioContext();
+const mixGain = mixCtx.createGain();
+mixGain.connect(mixCtx.destination);
+
+function routeDecksToMixer(){
+  ["A","B"].forEach(id=>{
+    const d = decks[id];
+    if(!d.ctx) return;
+    const srcNode = d.analyser;
+    const dest = mixGain;
+    try{ srcNode.connect(dest); }catch(e){}
+  });
+}
+routeDecksToMixer();
+
+/* ---------- VU Meters ---------- */
+function updateVU(id,clear=false){
+  const d = decks[id];
+  const canvas = document.getElementById(`vu${id}`);
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width = canvas.clientWidth;
+  const h = canvas.height = canvas.clientHeight;
+  ctx.clearRect(0,0,w,h);
+  if(clear) return;
+  const data = new Uint8Array(d.analyser.frequencyBinCount);
+  d.analyser.getByteFrequencyData(data);
+  const avg = data.reduce((a,b)=>a+b,0)/data.length;
+  const pct = avg/255;
+  ctx.fillStyle = pct>.8 ? "#f00" : pct>.6 ? "#ff0" : "#0f0";
+  ctx.fillRect(0,0,w*pct,h);
+  if(d.isPlaying) requestAnimationFrame(()=>updateVU(id));
+}
+
+/* ---------- Diagnostics ---------- */
+function updateDiag(id,txt){
+  document.getElementById(`diag${id}`).textContent = txt;
+}
+setInterval(()=>{
+  ["A","B"].forEach(id=>{
+    const d=decks[id];
+    if(!d.ctx) return;
+    const cpu = (Math.random()*5+1).toFixed(1); // placeholder CPU load
+    updateDiag(id,`CPU ${cpu}% | SR ${Math.round(d.ctx.sampleRate/1000)} kHz`);
+  });
+},2000);
+
+/* ---------- Latency LED ---------- */
+setInterval(()=>{
+  const led = document.getElementById("latencyLED");
+  const diff = Math.abs(decks.A.ctx.currentTime - decks.B.ctx.currentTime);
+  if(diff>0.05) led.classList.add("bad");
+  else led.classList.remove("bad");
+},1000);
+/* ===========================================================
+   CHUNK 4C – Waveforms, Cues, Record Mode, Sync, Auto-Gain
+   =========================================================== */
+
+/* ---------- Waveform Rendering ---------- */
+function drawWaveform(deckId, audioBuffer) {
+  const canvas = document.getElementById(`wave${deckId}`);
+  const ctx = canvas.getContext("2d");
+  const width = canvas.width = canvas.clientWidth;
+  const height = canvas.height = canvas.clientHeight;
+  const data = audioBuffer.getChannelData(0);
+  const step = Math.ceil(data.length / width);
+  const amp = height / 2;
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, width, height);
+  ctx.strokeStyle = "var(--accent)";
+  ctx.beginPath();
+  for (let i = 0; i < width; i++) {
+    let min = 1.0;
+    let max = -1.0;
+    for (let j = 0; j < step; j++) {
+      const datum = data[(i * step) + j];
+      if (datum < min) min = datum;
+      if (datum > max) max = datum;
+    }
+    ctx.moveTo(i, (1 + min) * amp);
+    ctx.lineTo(i, (1 + max) * amp);
+  }
+  ctx.stroke();
+}
+
+/* ---------- Cue Points ---------- */
+const cues = { A: {}, B: {} };
+
+document.querySelectorAll(".cueBtn").forEach(btn => {
+  btn.onclick = () => {
+    const deck = btn.dataset.deck;
+    const idx = btn.dataset.cue;
+    const d = decks[deck];
+    if (!d.isPlaying && d.pos) {
+      cues[deck][idx] = d.pos;
+      showToast(`Cue ${idx} set @ ${d.pos.toFixed(2)}s`);
+    } else if (cues[deck][idx] != null) {
+      const pos = cues[deck][idx];
+      if (d.isPlaying) d.src.stop();
+      d.pos = pos;
+      playDeck(deck);
+      showToast(`Jumped to Cue ${idx}`);
+    }
+  };
+});
+
+/* ---------- Record Mode ---------- */
+const recBtn = document.getElementById("recordStart");
+const stopRecBtn = document.getElementById("recordStop");
+const dlBtn = document.getElementById("downloadMix");
+
+recBtn.onclick = async () => {
+  if (recState.rec) return;
+  recState.rec = true;
+  const dest = mixCtx.createMediaStreamDestination();
+  mixGain.connect(dest);
+  recState.stream = dest.stream;
+  recState.recorder = new MediaRecorder(recState.stream);
+  recState.chunks = [];
+  recState.recorder.ondataavailable = e => recState.chunks.push(e.data);
+  recState.recorder.onstop = saveRecording;
+  recState.recorder.start();
+  recBtn.disabled = true;
+  stopRecBtn.disabled = false;
+  showToast("Recording started");
+};
+
+stopRecBtn.onclick = () => {
+  if (!recState.rec) return;
+  recState.rec = false;
+  recState.recorder.stop();
+  recBtn.disabled = false;
+  stopRecBtn.disabled = true;
+  dlBtn.disabled = false;
+  showToast("Recording stopped");
+};
+
+function saveRecording() {
+  const blob = new Blob(recState.chunks, { type: "audio/webm" });
+  const url = URL.createObjectURL(blob);
+  dlBtn.onclick = () => {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `WWTS_Mix_${new Date().toISOString().slice(0,19)}.webm`;
+    a.click();
+  };
+  const reader = new FileReader();
+  reader.onload = () => {
+    const base64 = reader.result.split(",")[1];
+    localStorage.setItem(`mix_${Date.now()}`, base64);
+    showToast("Recording saved to localStorage");
+  };
+  reader.readAsDataURL(blob);
+}
+
+/* ---------- Tempo Sync ---------- */
+function tempoSync() {
+  if (!decks.A.isPlaying || !decks.B.isPlaying) return;
+  const aRate = decks.A.buf.sampleRate;
+  const bRate = decks.B.buf.sampleRate;
+  const ratio = aRate / bRate;
+  decks.B.ctx.playbackRate.value = ratio;
+  showToast("Decks tempo-synced");
+}
+
+/* ---------- Auto Gain ---------- */
+function autoGain(deckId) {
+  const d = decks[deckId];
+  if (!d.buf) return;
+  const ch = d.buf.getChannelData(0);
+  const rms = Math.sqrt(ch.reduce((s, v) => s + v * v, 0) / ch.length);
+  const gain = 1 / (rms * 10);
+  d.gain.gain.value = Math.min(Math.max(gain, 0.1), 1.5);
+  showToast(`Auto-gain adjusted for Deck ${deckId}`);
+}
+
+/* ---------- Smart Fade ---------- */
+function smartFade(targetValue) {
+  const start = parseFloat(cross.value);
+  const diff = targetValue - start;
+  const steps = 15;
+  let i = 0;
+  const fade = setInterval(() => {
+    i++;
+    const pos = start + diff * (i / steps);
+    cross.value = pos;
+    cross.oninput();
+    if (i >= steps) clearInterval(fade);
+  }, 10);
+}
+
+/* ---------- Connect Utility Buttons ---------- */
+document.getElementById("crossfader").addEventListener("dblclick", ()=>smartFade(0.5));
+document.getElementById("recordStart").addEventListener("contextmenu", e=>{
+  e.preventDefault();
+  tempoSync();
+});
+["A","B"].forEach(id=>{
+  document.getElementById(`vu${id}`).addEventListener("dblclick", ()=>autoGain(id));
+});
+/* ===========================================================
+   CHUNK 4D – Visualizers, Sampler, Auto-Stop, Diagnostics
+   =========================================================== */
+
+/* ---------- Visualizer Overlay ---------- */
+function drawVisualizer(deckId) {
+  const d = decks[deckId];
+  const wave = document.getElementById(`wave${deckId}`);
+  const ctx = wave.getContext("2d");
+  const w = wave.width;
+  const h = wave.height;
+  const buffer = new Uint8Array(d.analyser.frequencyBinCount);
+
+  function render() {
+    if (!d.isPlaying) return;
+    d.analyser.getByteFrequencyData(buffer);
+    ctx.fillStyle = "rgba(0,0,0,0.3)";
+    ctx.fillRect(0, 0, w, h);
+    const barW = (w / buffer.length) * 1.5;
+    for (let i = 0; i < buffer.length; i++) {
+      const val = buffer[i];
+      const y = h - (val / 255) * h;
+      ctx.fillStyle = `hsl(${120 - val / 3},80%,60%)`;
+      ctx.fillRect(i * barW, y, barW, h - y);
+    }
+    requestAnimationFrame(() => render());
+  }
+  render();
+}
+
+/* ---------- Pad Sampler ---------- */
+const samplePads = {};
+for (let i = 1; i <= 4; i++) {
+  samplePads[i] = { buf: null, btn: null };
+  const btn = document.createElement("button");
+  btn.className = "samplePad";
+  btn.textContent = `Pad ${i}`;
+  btn.onclick = () => {
+    const pad = samplePads[i];
+    if (!pad.buf) return;
+    const ctx = mixCtx;
+    const src = ctx.createBufferSource();
+    src.buffer = pad.buf;
+    const g = ctx.createGain();
+    src.connect(g);
+    g.connect(mixGain);
+    src.start(0);
+    btn.classList.add("active");
+    setTimeout(() => btn.classList.remove("active"), 200);
+  };
+  document.getElementById("mixer").appendChild(btn);
+  samplePads[i].btn = btn;
+}
+
+/* Load sample to a pad (right-click) */
+document.querySelectorAll(".samplePad").forEach((b, i) => {
+  b.addEventListener("contextmenu", e => {
+    e.preventDefault();
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = "audio/*";
+    inp.onchange = async e2 => {
+      const file = e2.target.files[0];
+      const buf = await mixCtx.decodeAudioData(await file.arrayBuffer());
+      samplePads[i + 1].buf = buf;
+      showToast(`Loaded sample to Pad ${i + 1}`);
+    };
+    inp.click();
+  });
+});
+
+/* ---------- Auto-Stop on Timer End ---------- */
+function autoStopAll() {
+  ["A", "B"].forEach(id => {
+    const d = decks[id];
+    if (d.isPlaying) stopDeck(id);
+  });
+  showToast("Timer ended – decks stopped.");
+}
+window.addEventListener("battleEnd", autoStopAll);
+
+/* ---------- Warm-Up Fade ---------- */
+function fadeInDeck(deckId) {
+  const d = decks[deckId];
+  const g = d.gain.gain;
+  g.value = 0;
+  let step = 0;
+  const fade = setInterval(() => {
+    step += 0.05;
+    g.value = Math.min(step, 1);
+    if (g.value >= 1) clearInterval(fade);
+  }, 30);
+}
+["A", "B"].forEach(id => {
+  const play = document.getElementById(`play${id}`);
+  const orig = play.onclick;
+  play.onclick = () => {
+    fadeInDeck(id);
+    orig();
+    drawVisualizer(id);
+  };
+});
+
+/* ---------- Diagnostics Overlay ---------- */
+const diagOverlay = document.createElement("div");
+diagOverlay.id = "diagOverlay";
+diagOverlay.innerHTML = `
+  <div id="diagInner">
+    <h3>Performance Monitor</h3>
+    <div id="diagText"></div>
+    <button id="diagClose">Close</button>
+  </div>
+`;
+document.body.appendChild(diagOverlay);
+
+const diagCSS = document.createElement("style");
+diagCSS.textContent = `
+#diagOverlay{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,.85);color:#fff;z-index:9999;
+  display:none;align-items:center;justify-content:center;
+}
+#diagInner{background:#111;padding:20px;border-radius:10px;text-align:center;}
+#diagInner h3{margin-top:0;color:var(--accent);}
+#diagClose{margin-top:10px;padding:6px 12px;border:none;border-radius:6px;background:var(--accent);color:#fff;cursor:pointer;}
+`;
+document.head.appendChild(diagCSS);
+
+function updateDiagOverlay() {
+  const diag = document.getElementById("diagText");
+  const txt = `
+    Deck A: ${decks.A.isPlaying ? "Playing" : "Stopped"}<br>
+    Deck B: ${decks.B.isPlaying ? "Playing" : "Stopped"}<br>
+    Mix Sample Rate: ${mixCtx.sampleRate}<br>
+    Active Record: ${recState.rec ? "Yes" : "No"}<br>
+    Stored Mixes: ${Object.keys(localStorage).filter(k => k.startsWith("mix_")).length}
+  `;
+  diag.innerHTML = txt;
+}
+setInterval(updateDiagOverlay, 1500);
+
+document.getElementById("latencyLED").ondblclick = () => {
+  const el = document.getElementById("diagOverlay");
+  el.style.display = "flex";
+};
+document.getElementById("diagClose").onclick = () => {
+  document.getElementById("diagOverlay").style.display = "none";
+};
+
+/* ---------- Styling for Pads ---------- */
+const padCSS = document.createElement("style");
+padCSS.textContent = `
+.samplePad{
+  background:#222;border:none;color:#eee;margin-top:6px;
+  padding:6px 10px;border-radius:6px;cursor:pointer;
+  transition:background .2s,transform .1s;
+}
+.samplePad.active{background:var(--accent);transform:scale(1.1);}
+.samplePad:hover{background:#444;}
+`;
+document.head.appendChild(padCSS);
+/* ===========================================================
+   CHUNK 5A – SETTINGS DRAWER (HTML + CSS)
+   =========================================================== */
+
+/* ---------- Drawer Markup ---------- */
+const drawerHTML = `
+  <div id="settingsDrawer">
+    <div id="drawerHandle">⚙</div>
+    <div id="drawerHeader">
+      <input type="text" id="settingsSearch" placeholder="Search settings...">
+      <span id="drawerVersion"></span>
+    </div>
+
+    <div id="drawerTabs">
+      <button class="drawerTab active" data-tab="general">General</button>
+      <button class="drawerTab" data-tab="audio">Audio</button>
+      <button class="drawerTab" data-tab="visual">Visual</button>
+      <button class="drawerTab" data-tab="system">System</button>
+    </div>
+
+
+    <div id="drawerBody">
+      <div class="tabContent" id="tab_general">
+        <label>Round Count <input type="number" id="setRounds" min="1" max="10" value="3"></label>
+        <label>Round Duration (s) <input type="number" id="setDuration" min="30" max="600" value="180"></label>
+        <label><input type="checkbox" id="setAutoRecord"> Auto-record each battle</label>
+        <label><input type="checkbox" id="setAutoBackup"> Auto-backup every 5 min</label>
+        <label><input type="checkbox" id="setEndSummary"> Show end-of-battle summary</label>
+        <label><input type="checkbox" id="setFocusMode"> Enable Focus Mode</label>
+        <label><input type="checkbox" id="setGhostMode"> Ghost Mode (Decks only)</label>
+      </div>
+
+      <div class="tabContent hidden" id="tab_audio">
+        <label><input type="checkbox" id="setAutoGain"> Auto-gain on load</label>
+        <label>Fade Duration (ms) <input type="number" id="setFade" min="100" max="3000" value="500"></label>
+        <label>EQ Curve <select id="setEQ">
+          <option value="flat">Flat</option>
+          <option value="club">Club</option>
+          <option value="warm">Warm</option>
+        </select></label>
+        <label><input type="checkbox" id="setAlertSounds"> Enable alert sounds</label>
+        <label><input type="checkbox" id="setTempoSync"> Allow Tempo Sync</label>
+        <label><input type="checkbox" id="setAutoStop"> Stop decks when timer ends</label>
+      </div>
+
+      <div class="tabContent hidden" id="tab_visual">
+        <label>Accent Color <input type="color" id="setAccent" value="#ff3366"></label>
+        <label>Font <select id="setFont">
+          <option value="Inter">Inter</option>
+          <option value="Orbitron">Orbitron</option>
+          <option value="Roboto Mono">Roboto Mono</option>
+        </select></label>
+        <label>UI Scale (%) <input type="range" id="setScale" min="80" max="140" value="100"></label>
+        <label><input type="checkbox" id="setSystemTheme"> Follow system theme</label>
+        <label><input type="checkbox" id="setGradients"> Use gradient accents</label>
+        <label><input type="checkbox" id="setDensity"> Compact layout</label>
+        <div id="themePreview"></div>
+      </div>
+
+      <div class="tabContent hidden" id="tab_system">
+        <button id="exportSettings">⬆ Export Settings</button>
+        <button id="importSettings">⬇ Import Settings</button>
+        <button id="resetDefaults">Reset to Defaults</button>
+        <div id="resetCountdown" class="hidden">Resetting in 5… <button id="undoReset">Undo</button></div>
+        <button id="backupNow">Manual Backup</button>
+        <button id="clearStorage">Clear All Local Data</button>
+        <button id="showHotkeys">Show Hotkeys (?)</button>
+      </div>
+    </div>
+
+    <div id="drawerFooter">
+      <span id="profileStatus">Profile: Default</span>
+    </div>
+  </div>
+`;
+document.body.insertAdjacentHTML("beforeend", drawerHTML);
+
+/* ---------- Drawer Styles ---------- */
+const drawerStyle = document.createElement("style");
+drawerStyle.textContent = `
+:root{
+  --drawer-width:320px;
+}
+#settingsDrawer{
+  position:fixed;top:0;right:0;height:100%;width:var(--drawer-width);
+  background:#111;color:#eee;z-index:9998;
+  transform:translateX(var(--drawer-width));
+  transition:transform .4s cubic-bezier(.4,0,.2,1);
+  box-shadow:-4px 0 12px rgba(0,0,0,.6);
+  display:flex;flex-direction:column;
+  font-size:.9em;
+}
+#settingsDrawer.open{transform:translateX(0);}
+#drawerHandle{
+  position:absolute;left:-28px;top:50%;transform:translateY(-50%);
+  width:28px;height:60px;line-height:60px;text-align:center;
+  background:var(--accent);color:#fff;border-radius:8px 0 0 8px;
+  cursor:pointer;user-select:none;transition:background .2s;
+}
+#drawerHandle:hover{background:#ff5599;}
+#drawerHeader{
+  padding:8px;border-bottom:1px solid #222;
+  display:flex;justify-content:space-between;align-items:center;
+}
+#settingsSearch{
+  flex:1;margin-right:6px;padding:4px 6px;border:none;border-radius:4px;}
+</style>
+</script>
+</body>
+</html>
+
+  background:#222;color:#ccc;
+}
+#drawerTabs{
+  display:flex;justify-content:space-around;border-bottom:1px solid #222;
+}
+.drawerTab{
+  flex:1;padding:6px;border:none;background:#181818;color:#aaa;
+  cursor:pointer;transition:background .2s,color .2s;
+}
+.drawerTab.active{background:#222;color:var(--accent);font-weight:bold;}
+#drawerBody{
+  flex:1;overflow-y:auto;padding:8px 10px 12px 10px;
+}
+.tabContent label{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:6px;font-size:.9em;
+}
+.tabContent input[type=color],
+.tabContent input[type=number],
+.tabContent input[type=range],
+.tabContent select{margin-left:8px;}
+.tabContent.hidden{display:none;}
+#themePreview{
+  width:100%;height:50px;margin-top:8px;border-radius:6px;
+  background:var(--accent);
+}
+#drawerFooter{
+  border-top:1px solid #222;padding:6px 10px;font-size:.8em;color:#666;
+}
+#resetCountdown{margin-top:6px;font-size:.85em;color:#f66;}
+#resetCountdown.hidden{display:none;}
+#mainWrap.pushed{transform:translateX(calc(var(--drawer-width)*-1));transition:transform .4s ease;}
+`;
+document.head.appendChild(drawerStyle);
+/* ===========================================================
+   CHUNK 5B – Drawer Logic, Persistence, Search & Reset/Undo
+   =========================================================== */
+
+// ---------- Open / Close Drawer ----------
+const drawer = document.getElementById("settingsDrawer");
+const handle = document.getElementById("drawerHandle");
+const mainWrap = document.getElementById("mainWrap");
+let drawerOpen = false;
+
+handle.onclick = () => toggleDrawer();
+
+function toggleDrawer(forceState){
+  drawerOpen = forceState != null ? forceState : !drawerOpen;
+  drawer.classList.toggle("open", drawerOpen);
+  mainWrap.classList.toggle("pushed", drawerOpen);
+  if(drawerOpen){
+    muteDecks(true);
+    updateDrawerVersion();
+  }else{
+    muteDecks(false);
+  }
+}
+
+// ---------- Search Filter ----------
+const searchInput = document.getElementById("settingsSearch");
+searchInput.addEventListener("input",()=>{
+  const q = searchInput.value.toLowerCase();
+  document.querySelectorAll("#drawerBody label").forEach(lab=>{
+    lab.style.display = lab.textContent.toLowerCase().includes(q) ? "flex":"none";
+  });
+});
+
+// ---------- Tab Switching ----------
+document.querySelectorAll(".drawerTab").forEach(btn=>{
+  btn.onclick = ()=>{
+    document.querySelectorAll(".drawerTab").forEach(t=>t.classList.remove("active"));
+    btn.classList.add("active");
+    document.querySelectorAll(".tabContent").forEach(tc=>tc.classList.add("hidden"));
+    document.getElementById(`tab_${btn.dataset.tab}`).classList.remove("hidden");
+  };
+});
+
+// ---------- Save & Load ----------
+const settingEls = Array.from(document.querySelectorAll("#drawerBody input,#drawerBody select"));
+settingEls.forEach(el=>{
+  const key = el.id;
+  const saved = localStorage.getItem(key);
+  if(saved!=null){
+    if(el.type==="checkbox") el.checked = saved==="true";
+    else el.value = saved;
+  }
+  el.addEventListener("change",()=>{
+    localStorage.setItem(key, el.type==="checkbox" ? el.checked : el.value);
+    applySetting(key, el);
+  });
+});
+
+// ---------- Apply Settings ----------
+function applySetting(key,el){
+  switch(key){
+    case "setAccent":
+      document.documentElement.style.setProperty("--accent", el.value);
+      document.getElementById("themePreview").style.background = el.value;
+      break;
+    case "setScale":
+      document.body.style.transform = `scale(${el.value/100})`;
+      document.body.style.transformOrigin = "top left";
+      break;
+    case "setFont":
+      document.body.style.fontFamily = el.value;
+      break;
+    case "setGradients":
+      document.body.classList.toggle("gradientAccents", el.checked);
+      break;
+    case "setDensity":
+      document.body.classList.toggle("compact", el.checked);
+      break;
+    case "setSystemTheme":
+      if(el.checked) syncSystemTheme();
+      break;
+    case "setFocusMode":
+      document.body.classList.toggle("focusMode", el.checked);
+      break;
+    case "setGhostMode":
+      document.body.classList.toggle("ghostMode", el.checked);
+      break;
+  }
+}
+
+// ---------- System Theme Sync ----------
+function syncSystemTheme(){
+  const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  document.body.classList.toggle("dark", dark);
+  document.body.classList.toggle("light", !dark);
+}
+
+// ---------- Reset to Defaults ----------
+const resetBtn = document.getElementById("resetDefaults");
+const resetCountdown = document.getElementById("resetCountdown");
+const undoBtn = document.getElementById("undoReset");
+let resetTimer;
+
+resetBtn.onclick = ()=>{
+  resetCountdown.classList.remove("hidden");
+  let secs = 5;
+  resetCountdown.firstChild.textContent = `Resetting in ${secs}… `;
+  resetTimer = setInterval(()=>{
+    secs--;
+    resetCountdown.firstChild.textContent = `Resetting in ${secs}… `;
+    if(secs<=0){ clearInterval(resetTimer); doResetDefaults(); }
+  },1000);
+};
+
+undoBtn.onclick = ()=>{
+  clearInterval(resetTimer);
+  resetCountdown.classList.add("hidden");
+  showToast("Reset cancelled");
+};
+
+function doResetDefaults(){
+  settingEls.forEach(el=>{
+    localStorage.removeItem(el.id);
+    if(el.type==="checkbox") el.checked = false;
+    else if(el.type==="number") el.value = el.min || 0;
+  });
+  resetCountdown.classList.add("hidden");
+  showToast("All settings restored to defaults");
+  location.reload();
+}
+
+// ---------- Manual Backup / Clear ----------
+document.getElementById("backupNow").onclick = ()=>{
+  const data = JSON.stringify(localStorage);
+  const blob = new Blob([data],{type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "WWTS_backup.json";
+  a.click();
+  showToast("Backup downloaded");
+};
+
+document.getElementById("clearStorage").onclick = ()=>{
+  if(confirm("Clear all app data? This cannot be undone.")){
+    localStorage.clear();
+    showToast("Local data cleared");
+    location.reload();
+  }
+};
+
+// ---------- Import / Export Settings ----------
+document.getElementById("exportSettings").onclick = ()=>{
+  const prefs = {};
+  settingEls.forEach(el=>prefs[el.id]=el.type==="checkbox"?el.checked:el.value);
+  const blob = new Blob([JSON.stringify(prefs,null,2)],{type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "WWTS_settings.json";
+  a.click();
+};
+
+document.getElementById("importSettings").onclick = ()=>{
+  const inp = document.createElement("input");
+  inp.type="file";inp.accept="application/json";
+  inp.onchange=async e=>{
+    const text = await e.target.files[0].text();
+    const prefs = JSON.parse(text);
+    for(const [k,v] of Object.entries(prefs)){
+      localStorage.setItem(k,v);
+    }
+    showToast("Settings imported, reloading...");
+    setTimeout(()=>location.reload(),1000);
+  };
+  inp.click();
+};
+
+// ---------- Drawer Version + Timestamp ----------
+function updateDrawerVersion(){
+  const ver = "v1.0 Local Build";
+  const ts = new Date().toLocaleString();
+  document.getElementById("drawerVersion").textContent = `${ver} | ${ts}`;
+}
+
+// ---------- Hotkey Overlay Shortcut ----------
+document.getElementById("showHotkeys").onclick = ()=>toggleHotkeyOverlay();
+
+function toggleHotkeyOverlay(){
+  if(document.getElementById("hotkeyOverlay")){
+    document.getElementById("hotkeyOverlay").remove();
+    return;
+  }
+  const hk = document.createElement("div");
+  hk.id="hotkeyOverlay";
+  hk.innerHTML=`
+    <div id="hkInner">
+      <h3>Hotkeys</h3>
+      <ul>
+        <li>Space – Play/Pause Deck A</li>
+        <li>Enter – Play/Pause Deck B</li>
+        <li>[ / ] – Crossfader Left / Right</li>
+        <li>1–3 – Cue Points A</li>
+        <li>7–9 – Cue Points B</li>
+        <li>? – Toggle this overlay</li>
+      </ul>
+    </div>`;
+  document.body.appendChild(hk);
+  const css=document.createElement("style");
+  css.textContent=`
+  #hotkeyOverlay{
+    position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,.8);color:#fff;display:flex;
+    align-items:center;justify-content:center;z-index:9999;
+  }
+  #hkInner{background:#111;padding:20px 30px;border-radius:10px;}
+  #hkInner ul{list-style:none;padding:0;text-align:left;}
+  #hkInner li{margin:4px 0;}
+  `;
+  document.head.appendChild(css);
+}
+
+// ---------- Mute When Drawer Opens ----------
+function muteDecks(state){
+  ["A","B"].forEach(id=>{
+    const d = decks[id];
+    if(!d.gain) return;
+    d.gain.gain.value = state ? 0 : 1;
+  });
+}
+/* ===========================================================
+   CHUNK 5C – Theme Engine + Presets + Analytics + Extras
+   =========================================================== */
+
+/* ---------- Theme Engine ---------- */
+function applyTheme(themeObj){
+  if(!themeObj) return;
+  for(const [k,v] of Object.entries(themeObj)){
+    localStorage.setItem(k,v);
+    const el=document.getElementById(k);
+    if(el){
+      if(el.type==="checkbox") el.checked=v==="true";
+      else el.value=v;
+      applySetting(k,el);
+    }
+  }
+  showToast("Theme applied");
+}
+
+/* ---------- Theme Share Code ---------- */
+function exportThemeCode(){
+  const themeKeys=["setAccent","setFont","setScale","setGradients"];
+  const obj={};
+  themeKeys.forEach(k=>obj[k]=localStorage.getItem(k)||"");
+  const code=btoa(JSON.stringify(obj));
+  navigator.clipboard.writeText(code);
+  showToast("Theme code copied to clipboard");
+}
+function importThemeCode(){
+  const code=prompt("Paste theme code:");
+  if(!code) return;
+  try{
+    const obj=JSON.parse(atob(code));
+    applyTheme(obj);
+  }catch(e){showToast("Invalid theme code");}
+}
+
+/* ---------- Battle Presets ---------- */
+function savePreset(name){
+  const prefs={};
+  settingEls.forEach(el=>prefs[el.id]=el.type==="checkbox"?el.checked:el.value);
+  localStorage.setItem("preset_"+name,JSON.stringify(prefs));
+  showToast(`Preset '${name}' saved`);
+}
+function loadPreset(name){
+  const txt=localStorage.getItem("preset_"+name);
+  if(!txt){showToast("Preset not found");return;}
+  applyTheme(JSON.parse(txt));
+  showToast(`Preset '${name}' loaded`);
+}
+function listPresets(){
+  return Object.keys(localStorage).filter(k=>k.startsWith("preset_"))
+    .map(k=>k.replace("preset_",""));
+}
+
+/* ---------- Analytics Tracker ---------- */
+const analytics={
+  rounds:0, timeSpent:0, sliderMoves:0,
+  start:Date.now(),
+  tick(){
+    this.timeSpent=(Date.now()-this.start)/1000;
+  },
+  save(){
+    localStorage.setItem("analytics",JSON.stringify(this));
+  }
+};
+setInterval(()=>{analytics.tick();analytics.save();},5000);
+
+/* Small chart (Canvas) in System Tab */
+const chartCanvas=document.createElement("canvas");
+chartCanvas.width=280;chartCanvas.height=80;
+document.getElementById("tab_system").appendChild(chartCanvas);
+const chartCtx=chartCanvas.getContext("2d");
+function drawAnalytics(){
+  chartCtx.clearRect(0,0,chartCanvas.width,chartCanvas.height);
+  const vals=[analytics.rounds,analytics.timeSpent/60,analytics.sliderMoves];
+  const labels=["Rounds","Minutes","Moves"];
+  const max=Math.max(...vals,1);
+  vals.forEach((v,i)=>{
+    const x=30+i*90;
+    const h=(v/max)*60;
+    chartCtx.fillStyle="var(--accent)";
+    chartCtx.fillRect(x,70-h,40,h);
+    chartCtx.fillStyle="#ccc";
+    chartCtx.fillText(labels[i],x,75);
+  });
+}
+setInterval(drawAnalytics,3000);
+
+/* ---------- Error Recovery ---------- */
+window.addEventListener("error",()=>{
+  if(localStorage.length>5000){
+    alert("Local storage may be full. Consider exporting and clearing old data.");
+  }
+});
+
+/* ---------- Auto Backup Interval ---------- */
+if(localStorage.getItem("setAutoBackup")==="true"){
+  setInterval(()=>{
+    const data=JSON.stringify(localStorage);
+    localStorage.setItem("autoBackup",data);
+  },5*60*1000);
+}
+
+/* ---------- Quick Preset UI ---------- */
+const presetBar=document.createElement("div");
+presetBar.id="presetBar";
+presetBar.innerHTML=`
+  <button id="savePresetBtn">Save Preset</button>
+  <select id="presetList"></select>
+  <button id="loadPresetBtn">Load</button>
+  <button id="themeShare">Share Theme</button>
+  <button id="themeImport">Import Theme</button>
+`;
+document.getElementById("drawerFooter").appendChild(presetBar);
+
+function refreshPresetList(){
+  const sel=document.getElementById("presetList");
+  sel.innerHTML=listPresets().map(n=>`<option>${n}</option>`).join("");
+}
+refreshPresetList();
+
+document.getElementById("savePresetBtn").onclick=()=>{
+  const name=prompt("Preset name?");
+  if(name) savePreset(name), refreshPresetList();
+};
+document.getElementById("loadPresetBtn").onclick=()=>{
+  const sel=document.getElementById("presetList");
+  if(sel.value) loadPreset(sel.value);
+};
+document.getElementById("themeShare").onclick=()=>exportThemeCode();
+document.getElementById("themeImport").onclick=()=>importThemeCode();
+
+/* ---------- Misc UI Polishing ---------- */
+const miscCSS=document.createElement("style");
+miscCSS.textContent=`
+#presetBar{
+  display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;
+}
+#presetBar button,#presetBar select{
+  flex:1;min-width:70px;font-size:.8em;background:#222;color:#ccc;
+  border:none;border-radius:4px;padding:4px;cursor:pointer;
+}
+#presetBar button:hover{background:#333;color:var(--accent);}
+.gradientAccents [id^=vu]{filter:hue-rotate(30deg) saturate(1.2);}
+.focusMode #nav,.focusMode #tournamentsBtn{opacity:.4;pointer-events:none;}
+.ghostMode #scoringColumn,#matchControls{display:none;}
+.compact *{margin:2px!important;padding:2px!important;}
+`;
+document.head.appendChild(miscCSS);
+/* ===========================================================
+   CHUNK 6 – SETTINGS TRIGGER + ANALYTICS INTEGRATION
+   =========================================================== */
+
+/* ---------- Floating Gear Button ---------- */
+const gearBtn = document.createElement("button");
+gearBtn.id = "gearBtn";
+gearBtn.innerHTML = "⚙";
+document.body.appendChild(gearBtn);
+
+const gearCSS = document.createElement("style");
+gearCSS.textContent = `
+#gearBtn {
+  position: fixed;
+  top: 10px; right: 10px;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 9999;
+  transition: transform .25s, background .25s;
+  box-shadow: 0 0 8px rgba(0,0,0,.4);
+}
+#gearBtn:hover { background: #ff5599; transform: rotate(20deg); }
+#gearBtn.open { transform: rotate(90deg); }
+`;
+document.head.appendChild(gearCSS);
+
+gearBtn.onclick = () => {
+  gearBtn.classList.toggle("open");
+  toggleDrawer();
+};
+
+/* ---------- Analytics Hook-ups ---------- */
+function resetAnalyticsSession(){
+  analytics.start = Date.now();
+  analytics.rounds = 0;
+  analytics.sliderMoves = 0;
+  analytics.timeSpent = 0;
+  analytics.save();
+}
+resetAnalyticsSession();
+
+/* Count round starts */
+document.getElementById("startBattleBtn")?.addEventListener("click",()=>{
+  analytics.rounds++;
+  analytics.save();
+});
+
+/* Count slider moves */
+document.querySelectorAll(".scoreSlider").forEach(sl=>{
+  sl.addEventListener("input",()=>{
+    analytics.sliderMoves++;
+    analytics.save();
+  });
+});
+
+/* ---------- Battle End Dispatch ---------- */
+function dispatchBattleEnd(){
+  const ev = new Event("battleEnd");
+  window.dispatchEvent(ev);
+  analytics.save();
+  if(localStorage.getItem("setAutoBackup")==="true"){
+    const data = JSON.stringify(localStorage);
+    localStorage.setItem("autoBackup", data);
+    showToast("Auto-backup saved after battle");
+  }
+}
+
+/* Replace existing timer end call to include analytics */
+window.addEventListener("battleEnd", ()=>{
+  // Analytics already handled above
+  drawAnalytics();
+});
+
+/* Hook it into your round timer or Start Battle logic manually:
+   call dispatchBattleEnd() whenever a battle finishes. */
+/* ===========================================================
+   CHUNK 7A – Editable Scoring Sliders + Drag & Drop
+   =========================================================== */
+
+const sliderDefaults = [
+  "Creativity","Versatility","Mix","Drums","Melody",
+  "Bassline","Energy","Battle Ability","Arrangement","Sound Selection"
+];
+
+// Build slider list container
+const scoringColumn = document.getElementById("scoringColumn") || document.createElement("div");
+scoringColumn.id = "scoringColumn";
+document.body.appendChild(scoringColumn);
+scoringColumn.innerHTML = `
+  <div id="sliderHeader">
+    <h2>Scoring</h2>
+    <button id="addCategoryBtn">+</button>
+  </div>
+  <ul id="sliderList"></ul>
+  <div id="totalScoreBox">Total: <span id="totalScore">0.00</span></div>
+`;
+
+const sliderCSS = document.createElement("style");
+sliderCSS.textContent = `
+#scoringColumn{
+  position:relative;
+  background:#111;
+  padding:10px;
+  border-radius:10px;
+  width:320px;
+  margin:auto;
+  color:#eee;
+}
+#sliderHeader{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:6px;
+}
+#sliderHeader h2{margin:0;font-size:1em;}
+#addCategoryBtn{
+  background:var(--accent);color:#fff;border:none;border-radius:6px;
+  width:24px;height:24px;cursor:pointer;font-size:16px;
+}
+#sliderList{list-style:none;margin:0;padding:0;}
+.sliderItem{
+  display:flex;align-items:center;justify-content:space-between;
+  margin:4px 0;padding:4px;border:1px solid #222;border-radius:6px;
+  background:#181818;cursor:grab;
+}
+.sliderItem.dragging{opacity:0.4;}
+.sliderLabel{
+  flex:1;margin-right:6px;cursor:text;
+}
+.sliderLabel[contenteditable="true"]{
+  border-bottom:1px dashed var(--accent);
+  outline:none;
+}
+.sliderControl{flex:1;}
+.sliderControl input{width:100%;}
+#totalScoreBox{
+  margin-top:8px;padding-top:6px;border-top:1px solid #333;
+  text-align:right;font-size:1.1em;color:var(--accent);
+}
+`;
+document.head.appendChild(sliderCSS);
+
+/* ---------- Build / Restore Sliders ---------- */
+function buildSliders(){
+  const saved = JSON.parse(localStorage.getItem("scoreCategories")||"null");
+  const cats = saved?.length ? saved : sliderDefaults;
+  const list = document.getElementById("sliderList");
+  list.innerHTML="";
+  cats.forEach(name=>addSlider(name));
+  calcTotal();
+}
+function addSlider(name){
+  const li=document.createElement("li");
+  li.className="sliderItem";
+  li.draggable=true;
+  li.innerHTML=`
+    <span class="sliderLabel" contenteditable="false">${name}</span>
+    <div class="sliderControl">
+      <input type="range" min="0" max="10" step="0.01" value="0" class="scoreSlider">
+    </div>
+    <button class="delBtn">×</button>
+  `;
+  document.getElementById("sliderList").appendChild(li);
+  bindSliderEvents(li);
+}
+buildSliders();
+
+/* ---------- Drag & Drop Logic ---------- */
+let draggedItem=null;
+document.getElementById("sliderList").addEventListener("dragstart",e=>{
+  if(e.target.classList.contains("sliderItem")){
+    draggedItem=e.target;
+    e.target.classList.add("dragging");
+  }
+});
+document.getElementById("sliderList").addEventListener("dragover",e=>{
+  e.preventDefault();
+  const list=e.currentTarget;
+  const after=getDragAfterElement(list,e.clientY);
+  if(after==null) list.appendChild(draggedItem);
+  else list.insertBefore(draggedItem,after);
+});
+document.getElementById("sliderList").addEventListener("drop",()=>{
+  if(draggedItem){
+    draggedItem.classList.remove("dragging");
+    draggedItem=null;
+    saveSliderOrder();
+  }
+});
+function getDragAfterElement(container,y){
+  const els=[...container.querySelectorAll(".sliderItem:not(.dragging)")];
+  return els.reduce((closest,child)=>{
+    const box=child.getBoundingClientRect();
+    const offset=y-box.top-box.height/2;
+    return (offset<0 && offset>closest.offset)?{offset,element:child}:closest;
+  },{offset:Number.NEGATIVE_INFINITY}).element;
+}
+
+/* ---------- Slider Events ---------- */
+function bindSliderEvents(li){
+  const label=li.querySelector(".sliderLabel");
+  const range=li.querySelector("input");
+  const delBtn=li.querySelector(".delBtn");
+
+  // Inline rename
+  label.ondblclick=()=>{label.contentEditable="true";label.focus();};
+  label.onblur=()=>{
+    label.contentEditable="false";
+    saveSliderOrder();
+  };
+
+  // Delete
+  delBtn.onclick=()=>{
+    li.remove();
+    saveSliderOrder();
+    calcTotal();
+  };
+
+  // Input update
+  range.addEventListener("input",()=>{
+    calcTotal();
+    analytics.sliderMoves++;
+    analytics.save();
+  });
+}
+
+/* ---------- Add New Category ---------- */
+document.getElementById("addCategoryBtn").onclick=()=>{
+  const name=prompt("New category name:");
+  if(name){
+    addSlider(name);
+    saveSliderOrder();
+  }
+};
+
+/* ---------- Save Order / Names ---------- */
+function saveSliderOrder(){
+  const cats=[...document.querySelectorAll(".sliderLabel")].map(l=>l.textContent.trim());
+  localStorage.setItem("scoreCategories",JSON.stringify(cats));
+}
+
+/* ---------- Total Calculation ---------- */
+function calcTotal(){
+  const vals=[...document.querySelectorAll(".scoreSlider")].map(s=>parseFloat(s.value));
+  const sum=vals.reduce((a,b)=>a+b,0);
+  const totalEl=document.getElementById("totalScore");
+  if(totalEl) totalEl.textContent=sum.toFixed(2);
+  return sum;
+}
+/* ===========================================================
+   CHUNK 7B – TIMER + BATTLE FLOW
+   =========================================================== */
+
+let battleTimer=null;
+let timeLeft=180; // default 3 minutes (customizable later)
+let battleActive=false;
+
+const matchControls=document.getElementById("matchControls")||document.createElement("div");
+matchControls.id="matchControls";
+matchControls.innerHTML=`
+  <div id="battleControls">
+    <button id="startBattleBtn">Start Battle</button>
+    <button id="pauseBattleBtn" disabled>Pause</button>
+    <button id="resetBattleBtn" disabled>Reset</button>
+    <span id="battleTimerDisplay">03:00</span>
+  </div>
+`;
+document.body.insertBefore(matchControls,document.getElementById("scoringColumn"));
+
+const battleCSS=document.createElement("style");
+battleCSS.textContent=`
+#battleControls{
+  display:flex;justify-content:center;align-items:center;gap:6px;
+  margin-bottom:8px;
+}
+#battleControls button{
+  background:var(--accent);
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  padding:6px 12px;
+  cursor:pointer;
+  font-size:.9em;
+}
+#battleControls button:disabled{
+  opacity:.4;cursor:not-allowed;
+}
+#battleTimerDisplay{
+  font-family:monospace;
+  font-size:1.1em;
+  color:var(--accent);
+  width:70px;text-align:center;
+}
+`;
+document.head.appendChild(battleCSS);
+
+/* ---------- Helper: Format Time ---------- */
+function fmtTime(sec){
+  const m = Math.floor(sec/60).toString().padStart(2,"0");
+  const s = Math.floor(sec%60).toString().padStart(2,"0");
+  return `${m}:${s}`;
+}
+
+/* ---------- Start Battle ---------- */
+document.getElementById("startBattleBtn").onclick=()=>{
+  if(battleActive) return;
+  battleActive=true;
+  analytics.rounds++;
+  analytics.save();
+  document.getElementById("pauseBattleBtn").disabled=false;
+  document.getElementById("resetBattleBtn").disabled=false;
+  showToast("Battle Started!");
+  startTimer();
+};
+
+function startTimer(){
+  clearInterval(battleTimer);
+  battleTimer=setInterval(()=>{
+    timeLeft--;
+    document.getElementById("battleTimerDisplay").textContent=fmtTime(timeLeft);
+    if(timeLeft<=0){
+      endBattle();
+    }
+  },1000);
+}
+
+/* ---------- Pause / Resume ---------- */
+document.getElementById("pauseBattleBtn").onclick=e=>{
+  if(!battleActive) return;
+  if(battleTimer){
+    clearInterval(battleTimer);
+    battleTimer=null;
+    e.target.textContent="Resume";
+    showToast("Paused");
+  }else{
+    startTimer();
+    e.target.textContent="Pause";
+    showToast("Resumed");
+  }
+};
+
+/* ---------- Reset Battle ---------- */
+document.getElementById("resetBattleBtn").onclick=()=>{
+  clearInterval(battleTimer);
+  battleTimer=null;
+  timeLeft=180;
+  document.getElementById("battleTimerDisplay").textContent="03:00";
+  document.getElementById("pauseBattleBtn").disabled=true;
+  document.getElementById("resetBattleBtn").disabled=true;
+  document.getElementById("pauseBattleBtn").textContent="Pause";
+  battleActive=false;
+  showToast("Reset");
+  [...document.querySelectorAll(".scoreSlider")].forEach(s=>s.value=0);
+  calcTotal();
+};
+
+/* ---------- End Battle ---------- */
+function endBattle(){
+  clearInterval(battleTimer);
+  battleTimer=null;
+  battleActive=false;
+  document.getElementById("pauseBattleBtn").disabled=true;
+  document.getElementById("resetBattleBtn").disabled=false;
+  document.getElementById("pauseBattleBtn").textContent="Pause";
+  showToast("Battle Ended!");
+  dispatchBattleEnd();
+  showSummaryOverlay();
+}
+/* ===========================================================
+   CHUNK 7C – SUMMARY OVERLAY + CONTESTANT DISPLAY
+   =========================================================== */
+
+const summaryOverlay=document.createElement("div");
+summaryOverlay.id="summaryOverlay";
+summaryOverlay.innerHTML=`
+  <div id="summaryBox">
+    <h2>Battle Summary</h2>
+    <div id="contestantWrap">
+      <div class="contestant" id="c1">
+        <img id="c1Photo" src="" alt="Contestant 1">
+        <span id="c1Name">Contestant 1</span>
+        <div class="score">Score: <span id="c1Score">0.00</span></div>
+      </div>
+      <div id="vs">VS</div>
+      <div class="contestant" id="c2">
+        <img id="c2Photo" src="" alt="Contestant 2">
+        <span id="c2Name">Contestant 2</span>
+        <div class="score">Score: <span id="c2Score">0.00</span></div>
+      </div>
+    </div>
+    <div id="summaryBtns">
+      <button id="nextRoundBtn">Next Round</button>
+      <button id="replayBtn">Replay</button>
+      <button id="closeSummaryBtn">Close</button>
+    </div>
+  </div>
+`;
+document.body.appendChild(summaryOverlay);
+
+const summaryCSS=document.createElement("style");
+summaryCSS.textContent=`
+#summaryOverlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.8);
+  display:none;justify-content:center;align-items:center;
+  z-index:9000;
+}
+#summaryBox{
+  background:#111;padding:20px;border-radius:12px;
+  width:420px;text-align:center;color:#fff;
+  box-shadow:0 0 15px rgba(0,0,0,.6);
+}
+#contestantWrap{
+  display:flex;align-items:center;justify-content:space-around;
+  margin:12px 0;
+}
+.contestant{
+  display:flex;flex-direction:column;align-items:center;
+  gap:4px;
+}
+.contestant img{
+  width:90px;height:90px;border-radius:50%;
+  object-fit:cover;border:3px solid var(--accent);
+}
+#vs{font-size:1.4em;color:var(--accent);}
+#summaryBtns{display:flex;justify-content:center;gap:8px;margin-top:10px;}
+#summaryBtns button{
+  background:var(--accent);border:none;border-radius:6px;
+  padding:6px 12px;color:#fff;cursor:pointer;
+}
+#summaryBtns button:hover{background:#ff5599;}
+`;
+document.head.appendChild(summaryCSS);
+
+/* ---------- Summary Logic ---------- */
+function showSummaryOverlay(){
+  // Pull contestant info
+  const c1 = JSON.parse(localStorage.getItem("contestant1")||"{}");
+  const c2 = JSON.parse(localStorage.getItem("contestant2")||"{}");
+  document.getElementById("c1Name").textContent=c1.name||"Contestant 1";
+  document.getElementById("c2Name").textContent=c2.name||"Contestant 2";
+  document.getElementById("c1Photo").src=c1.photo||"";
+  document.getElementById("c2Photo").src=c2.photo||"";
+  // Scores
+  const total=calcTotal();
+  document.getElementById("c1Score").textContent=total.toFixed(2);
+  document.getElementById("c2Score").textContent=(Math.random()*10+total-5).toFixed(2);
+  summaryOverlay.style.display="flex";
+}
+
+/* ---------- Buttons ---------- */
+document.getElementById("closeSummaryBtn").onclick=()=>{
+  summaryOverlay.style.display="none";
+};
+document.getElementById("replayBtn").onclick=()=>{
+  summaryOverlay.style.display="none";
+  document.getElementById("resetBattleBtn").click();
+  document.getElementById("startBattleBtn").click();
+};
+document.getElementById("nextRoundBtn").onclick=()=>{
+  summaryOverlay.style.display="none";
+  document.getElementById("resetBattleBtn").click();
+  showToast("Next Round Ready");
+};
+
+/* ---------- Contestant Storage Example ----------
+   Each contestant bio page can set:
+   localStorage.setItem("contestant1", JSON.stringify({name:"Name", photo:"url"}));
+   localStorage.setItem("contestant2", JSON.stringify({name:"Name", photo:"url"}));
+   The battle screen pulls those automatically.
+-------------------------------------------------- */
+/* ===========================================================
+   CHUNK 8A – CONTESTANT BIO EDITOR + LOADER PANEL (HTML + CSS)
+   =========================================================== */
+
+const bioPanel = document.createElement("div");
+bioPanel.id = "bioPanel";
+bioPanel.innerHTML = `
+  <div id="bioPanelHeader">
+    <h2>Contestant Bios</h2>
+    <button id="bioClose">×</button>
+  </div>
+  <div id="bioForm">
+    <label>Name<input id="bioName" type="text" placeholder="Artist name"></label>
+    <label>Handle<input id="bioHandle" type="text" placeholder="@handle"></label>
+    <label>Crew<input id="bioCrew" type="text" placeholder="Crew / Collective"></label>
+    <label>Photo URL<input id="bioPhotoURL" type="url" placeholder="https://..."></label>
+    <label>or Upload<input id="bioPhotoFile" type="file" accept="image/*"></label>
+    <img id="bioPreview" src="" alt="Preview">
+    <label>Notes<textarea id="bioNotes" rows="3" placeholder="Bio or battle notes"></textarea></label>
+    <div id="bioButtons">
+      <button id="bioSaveBtn">Save</button>
+      <button id="bioNewBtn">New</button>
+      <button id="bioRandomBtn">Random Name</button>
+    </div>
+  </div>
+  <h3>Saved Contestants</h3>
+  <div id="bioGrid"></div>
+`;
+document.body.appendChild(bioPanel);
+
+/* Toggle Button (optional access from home) */
+const bioBtn = document.createElement("button");
+bioBtn.id = "bioBtn";
+bioBtn.textContent = "👥";
+document.body.appendChild(bioBtn);
+
+const bioCSS = document.createElement("style");
+bioCSS.textContent = `
+#bioBtn{
+  position:fixed;top:10px;right:56px;
+  width:36px;height:36px;border-radius:50%;
+  border:none;background:var(--accent);color:#fff;font-size:18px;
+  cursor:pointer;z-index:9998;transition:transform .25s,background .25s;
+}
+#bioBtn:hover{background:#ff5599;transform:scale(1.1);}
+#bioPanel{
+  position:fixed;top:0;right:-420px;width:400px;height:100%;
+  background:#0f0f0f;color:#eee;border-left:2px solid var(--accent);
+  box-shadow:-5px 0 20px rgba(0,0,0,.6);
+  transition:right .4s ease;z-index:9001;overflow-y:auto;padding:12px;
+}
+#bioPanel.open{right:0;}
+#bioPanelHeader{display:flex;justify-content:space-between;align-items:center;}
+#bioPanelHeader h2{margin:0;font-size:1.1em;color:var(--accent);}
+#bioClose{background:none;border:none;color:#aaa;font-size:1.5em;cursor:pointer;}
+#bioForm label{display:block;margin-top:6px;font-size:.9em;}
+#bioForm input,#bioForm textarea{
+  width:100%;margin-top:2px;background:#111;border:1px solid #333;
+  color:#eee;padding:4px;border-radius:4px;
+}
+#bioPreview{
+  width:100%;max-height:160px;object-fit:cover;margin-top:6px;
+  border-radius:8px;display:none;
+  border:2px solid var(--accent);transition:filter .3s ease;
+}
+#bioPreview:hover{filter:hue-rotate(40deg);}
+#bioButtons{display:flex;justify-content:space-between;margin-top:8px;}
+#bioButtons button{
+  flex:1;margin:2px;background:var(--accent);border:none;border-radius:6px;
+  color:#fff;cursor:pointer;padding:6px;
+}
+#bioButtons button:hover{background:#ff5599;}
+#bioGrid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));
+  gap:8px;margin-top:10px;
+}
+.bioCard{
+  background:#1b1b1b;border-radius:8px;padding:6px;text-align:center;
+  cursor:pointer;transition:transform .25s,box-shadow .25s;
+}
+.bioCard:hover{
+  transform:translateY(-4px);
+  box-shadow:0 0 10px var(--accent);
+}
+.bioCard img{
+  width:100%;height:80px;object-fit:cover;border-radius:6px;
+  border:2px solid #222;margin-bottom:4px;
+}
+.bioCard.selected{
+  outline:2px solid var(--accent);
+  box-shadow:0 0 8px var(--accent);
+}
+`;
+document.head.appendChild(bioCSS);
+/* ===========================================================
+   CHUNK 8B – CONTESTANT BIO LOGIC + STORAGE + INTERACTIONS
+   =========================================================== */
+
+let editIndex = null;
+
+/* ---------- Panel Toggle ---------- */
+bioBtn.onclick = () => bioPanel.classList.add("open");
+document.getElementById("bioClose").onclick = () => bioPanel.classList.remove("open");
+
+/* ---------- Random Name Generator ---------- */
+const randomNames = [
+  "FreqRider","BassForge","LoopLancer","SyntaxSoul","Vinyl Ghost",
+  "WaveMage","KickSmith","SubPharaoh","HiHatNomad","Melody Mechanic"
+];
+document.getElementById("bioRandomBtn").onclick = () => {
+  document.getElementById("bioName").value =
+    randomNames[Math.floor(Math.random()*randomNames.length)];
+};
+
+/* ---------- Load from LocalStorage ---------- */
+function loadBios() {
+  const bios = JSON.parse(localStorage.getItem("contestants")||"[]");
+  const grid = document.getElementById("bioGrid");
+  grid.innerHTML = "";
+  bios.forEach((b,i)=>{
+    const card = document.createElement("div");
+    card.className = "bioCard";
+    card.innerHTML = `
+      <img src="${b.photo||""}" alt="">
+      <div>${b.name||"Unnamed"}</div>
+      <small>${b.handle||""}</small>
+    `;
+    card.onclick = () => selectBio(i);
+    grid.appendChild(card);
+  });
+}
+loadBios();
+
+/* ---------- Select for Edit ---------- */
+function selectBio(index) {
+  const bios = JSON.parse(localStorage.getItem("contestants")||"[]");
+  const b = bios[index];
+  editIndex = index;
+  document.getElementById("bioName").value = b.name||"";
+  document.getElementById("bioHandle").value = b.handle||"";
+  document.getElementById("bioCrew").value = b.crew||"";
+  document.getElementById("bioPhotoURL").value = b.photo||"";
+  document.getElementById("bioNotes").value = b.notes||"";
+  if(b.photo){
+    bioPreview.src = b.photo;
+    bioPreview.style.display="block";
+  }
+}
+
+/* ---------- Save / Update ---------- */
+document.getElementById("bioSaveBtn").onclick = () => {
+  const bios = JSON.parse(localStorage.getItem("contestants")||"[]");
+  const newBio = {
+    name: document.getElementById("bioName").value.trim(),
+    handle: document.getElementById("bioHandle").value.trim(),
+    crew: document.getElementById("bioCrew").value.trim(),
+    photo: document.getElementById("bioPhotoURL").value.trim() || bioPreview.src,
+    notes: document.getElementById("bioNotes").value.trim()
+  };
+  if(editIndex!==null) bios[editIndex] = newBio;
+  else bios.push(newBio);
+  localStorage.setItem("contestants", JSON.stringify(bios));
+  editIndex = null;
+  loadBios();
+  showToast("Contestant saved");
+};
+
+/* ---------- New ---------- */
+document.getElementById("bioNewBtn").onclick = () => {
+  ["bioName","bioHandle","bioCrew","bioPhotoURL","bioNotes"].forEach(id=>document.getElementById(id).value="");
+  bioPreview.src="";
+  bioPreview.style.display="none";
+  editIndex = null;
+};
+
+/* ---------- Photo Preview: URL + File ---------- */
+document.getElementById("bioPhotoURL").oninput = e=>{
+  const url = e.target.value.trim();
+  if(url){
+    bioPreview.src = url;
+    bioPreview.style.display="block";
+  }
+};
+document.getElementById("bioPhotoFile").onchange = e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    bioPreview.src = ev.target.result;
+    bioPreview.style.display="block";
+  };
+  reader.readAsDataURL(file);
+};
+
+/* ---------- Assign to Battle ---------- */
+document.getElementById("bioGrid").addEventListener("dblclick", e=>{
+  const cards = [...document.querySelectorAll(".bioCard")];
+  const idx = cards.indexOf(e.target.closest(".bioCard"));
+  if(idx<0) return;
+  const bios = JSON.parse(localStorage.getItem("contestants")||"[]");
+  const selected = bios[idx];
+  const slot = prompt("Assign to slot (1 or 2)?","1");
+  if(slot==="1"||slot==="2"){
+    localStorage.setItem(`contestant${slot}`,JSON.stringify(selected));
+    showToast(`Loaded ${selected.name||"?"} into Contestant ${slot}`);
+    glowContestant(slot);
+  }
+});
+
+/* ---------- Visual Glow ---------- */
+function glowContestant(slot){
+  const el = document.getElementById(`c${slot}`);
+  if(!el) return;
+  el.classList.add("glow");
+  setTimeout(()=>el.classList.remove("glow"),1000);
+}
+const glowCSS = document.createElement("style");
+glowCSS.textContent = `
+.glow{box-shadow:0 0 20px var(--accent);transition:box-shadow .4s ease;}
+`;
+document.head.appendChild(glowCSS);
+/* ===========================================================
+   CHUNK 9 – QUICK SWAP MENU + LIVE CONTROLS
+   =========================================================== */
+
+const swapBtn = document.createElement("button");
+swapBtn.id = "swapBtn";
+swapBtn.textContent = "🔄";
+document.body.appendChild(swapBtn);
+
+const swapMenu = document.createElement("div");
+swapMenu.id = "swapMenu";
+swapMenu.innerHTML = `
+  <div id="swapHeader">
+    <h3>Quick Swap</h3>
+    <button id="swapClose">×</button>
+  </div>
+  <div id="swapList"></div>
+  <div id="latencyBar"><div id="latencyFill"></div></div>
+`;
+document.body.appendChild(swapMenu);
+
+/* ---------- Styles ---------- */
+const swapCSS = document.createElement("style");
+swapCSS.textContent = `
+#swapBtn{
+  position:fixed;top:10px;right:102px;
+  width:36px;height:36px;border-radius:50%;
+  border:none;background:var(--accent);
+  color:#fff;font-size:18px;cursor:pointer;
+  z-index:9998;transition:transform .25s,background .25s;
+}
+#swapBtn:hover{background:#ff5599;transform:rotate(90deg);}
+#swapMenu{
+  position:fixed;top:0;right:-260px;width:240px;height:100%;
+  background:#111;border-left:2px solid var(--accent);
+  box-shadow:-4px 0 10px rgba(0,0,0,.6);
+  transition:right .4s ease;z-index:9002;overflow-y:auto;padding:8px;
+}
+#swapMenu.open{right:0;}
+#swapHeader{display:flex;justify-content:space-between;align-items:center;}
+#swapHeader h3{margin:0;color:var(--accent);font-size:1em;}
+#swapClose{background:none;border:none;color:#aaa;font-size:1.4em;cursor:pointer;}
+#swapList{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
+.swapCard{
+  background:#1b1b1b;border-radius:6px;padding:6px;cursor:pointer;
+  display:flex;align-items:center;gap:6px;transition:background .2s;
+  position:relative;
+}
+.swapCard:hover{background:#262626;}
+.swapCard img{
+  width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #222;
+}
+.swapCard .swapInfo{flex:1;}
+.swapCard small{display:block;color:#888;font-size:.75em;}
+.swapCard .crown{position:absolute;top:-4px;left:-4px;font-size:1.2em;color:gold;display:none;}
+.swapCard.winner .crown{display:block;}
+#swapAdd{
+  display:flex;align-items:center;justify-content:center;
+  border:2px dashed #333;border-radius:6px;color:#555;
+  padding:10px;cursor:pointer;margin-top:6px;
+}
+#swapAdd:hover{background:#222;color:var(--accent);}
+#latencyBar{
+  position:sticky;bottom:6px;height:6px;width:100%;
+  background:#222;border-radius:3px;margin-top:12px;
+}
+#latencyFill{
+  width:0%;height:100%;background:var(--accent);
+  border-radius:3px;transition:width .2s ease;
+}
+.swapTooltip{
+  position:absolute;left:-220px;top:0;width:200px;background:#0e0e0e;
+  border:1px solid #333;padding:6px;border-radius:6px;font-size:.8em;
+  color:#ccc;z-index:10000;display:none;
+}
+.swapCard:hover .swapTooltip{display:block;}
+.pulse{animation:pulseGlow 2s ease-in-out infinite;}
+@keyframes pulseGlow{
+  0%{box-shadow:0 0 5px transparent;}
+  50%{box-shadow:0 0 15px var(--accent);}
+  100%{box-shadow:0 0 5px transparent;}
+}
+`;
+document.head.appendChild(swapCSS);
+
+/* ---------- Open / Close ---------- */
+swapBtn.onclick = ()=> swapMenu.classList.add("open");
+document.getElementById("swapClose").onclick = ()=> swapMenu.classList.remove("open");
+
+/* ---------- Build Swap List ---------- */
+function buildSwapList(){
+  const bios = JSON.parse(localStorage.getItem("contestants")||"[]");
+  const list = document.getElementById("swapList");
+  list.innerHTML="";
+  bios.forEach((b,i)=>{
+    const div=document.createElement("div");
+    div.className="swapCard";
+    div.innerHTML=`
+      <span class="crown">👑</span>
+      <img src="${b.photo||""}" alt="">
+      <div class="swapInfo">
+        <strong>${b.name||"Unnamed"}</strong>
+        <small>${b.handle||""}</small>
+      </div>
+      <div class="swapTooltip">
+        <div><b>Crew:</b> ${b.crew||"-"}</div>
+        <div><b>Notes:</b> ${b.notes||"-"}</div>
+        <div><b>Win Rate:</b> ${calcWinRate(b.name)}%</div>
+      </div>
+    `;
+    div.onclick = ()=>quickSwap(i);
+    list.appendChild(div);
+  });
+  const add=document.createElement("div");
+  add.id="swapAdd";
+  add.innerHTML="+ Add New";
+  add.onclick=()=>{
+    bioPanel.classList.add("open");
+    document.getElementById("bioNewBtn").click();
+  };
+  list.appendChild(add);
+  markActive();
+}
+buildSwapList();
+
+/* ---------- Quick Swap Logic ---------- */
+function quickSwap(index){
+  const bios=JSON.parse(localStorage.getItem("contestants")||"[]");
+  const selected=bios[index];
+  const slot=prompt("Swap into slot (1 or 2)?","1");
+  if(slot!=="1"&&slot!=="2")return;
+  const locked=localStorage.getItem(`slot${slot}Locked`);
+  if(locked==="true"){showToast(`Slot ${slot} is locked`);return;}
+  localStorage.setItem(`contestant${slot}`,JSON.stringify(selected));
+  localStorage.setItem("lastPair",JSON.stringify([localStorage.getItem("contestant1"),localStorage.getItem("contestant2")]));
+  glowContestant(slot);
+  showToast(`Swapped in ${selected.name||"?"} to slot ${slot}`);
+  buildSwapList();
+}
+
+/* ---------- Hotkey Shortcuts ---------- */
+window.addEventListener("keydown",e=>{
+  if(e.key==="1"||e.key==="2"){
+    const slot=e.key;
+    const bios=JSON.parse(localStorage.getItem("contestants")||"[]");
+    const idx=(slot==="1"?0:1)%bios.length;
+    if(bios.length){quickSwap(idx);}
+  }
+});
+
+/* ---------- Mark Active + Crown Winners ---------- */
+function markActive(){
+  const c1=JSON.parse(localStorage.getItem("contestant1")||"{}");
+  const c2=JSON.parse(localStorage.getItem("contestant2")||"{}");
+  document.querySelectorAll(".swapCard").forEach(card=>{
+    const name=card.querySelector("strong").textContent;
+    card.classList.remove("pulse","winner");
+    if(name===c1.name||name===c2.name) card.classList.add("pulse");
+    const w=localStorage.getItem("lastWinner");
+    if(name===w) card.classList.add("winner");
+  });
+}
+
+/* ---------- Win-Rate Calculation ---------- */
+function calcWinRate(name){
+  const stats=JSON.parse(localStorage.getItem("battleStats")||"{}");
+  if(!stats[name])return 0;
+  const {wins,total}=stats[name];
+  return total?Math.round((wins/total)*100):0;
+}
+
+/* ---------- Latency Meter (cosmetic) ---------- */
+let latency=0;
+setInterval(()=>{
+  latency=(latency+Math.random()*15)%100;
+  document.getElementById("latencyFill").style.width=`${latency}%`;
+},800);
+
+/* ---------- Track Winners ---------- */
+window.addEventListener("battleEnd",()=>{
+  const c1=JSON.parse(localStorage.getItem("contestant1")||"{}");
+  const c2=JSON.parse(localStorage.getItem("contestant2")||"{}");
+  const s1=parseFloat(document.getElementById("c1Score")?.textContent||"0");
+  const s2=parseFloat(document.getElementById("c2Score")?.textContent||"0");
+  const winner=s1>=s2?c1.name:c2.name;
+  const loser=s1>=s2?c2.name:c1.name;
+  const stats=JSON.parse(localStorage.getItem("battleStats")||"{}");
+  [winner,loser].forEach(n=>{
+    if(!n)return;
+    stats[n]=stats[n]||{wins:0,total:0};
+    stats[n].total++;
+    if(n===winner)stats[n].wins++;
+  });
+  localStorage.setItem("battleStats",JSON.stringify(stats));
+  localStorage.setItem("lastWinner",winner);
+  buildSwapList();
+});
+
+/* ---------- Lock Toggle ---------- */
+function toggleLock(slot){
+  const key=`slot${slot}Locked`;
+  const locked=localStorage.getItem(key)==="true";
+  localStorage.setItem(key,!locked);
+  showToast(`Slot ${slot} ${!locked?"locked":"unlocked"}`);
+}
+<!-- ==========================================================
+     CHUNK 10A – TOURNAMENT BRACKET OVERLAY STRUCTURE
+     ========================================================== -->
+
+<!-- Overlay wrapper -->
+<div id="tournamentOverlay">
+  <div id="tournamentHeader">
+    <h2>🏆 Tournament Bracket</h2>
+    <div id="tournamentControls">
+      <button id="tournamentNew">New</button>
+      <button id="tournamentLoad">Load</button>
+      <button id="tournamentSave">Save</button>
+      <button id="tournamentExport">Export Image</button>
+      <button id="tournamentClose">×</button>
+    </div>
+  </div>
+
+  <!-- Zoom & Pan container -->
+  <div id="bracketViewport">
+    <div id="bracketCanvas"></div>
+  </div>
+
+  <!-- Bottom-right toggle for battle-history feed -->
+  <div id="historyToggle">📜 History</div>
+  <div id="historyPanel"></div>
+
+  <!-- Hidden pop-up for match preview -->
+  <div id="matchPopup">
+    <div class="matchInner">
+      <div id="matchContestants"></div>
+      <button id="matchStartBattle">Start Battle</button>
+      <button id="matchClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<style>
+/* ---------- Overlay container ---------- */
+#tournamentOverlay{
+  position:fixed;inset:0;background:rgba(10,10,10,.98);
+  display:none;flex-direction:column;z-index:9500;
+  color:#eee;overflow:hidden;
+}
+#tournamentOverlay.open{display:flex;animation:slideUp .4s ease;}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+
+/* ---------- Header ---------- */
+#tournamentHeader{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 14px;background:#0d0d0d;border-bottom:2px solid var(--accent);
+}
+#tournamentHeader h2{margin:0;font-size:1.2em;color:var(--accent);}
+#tournamentControls button{
+  margin-left:6px;background:#1b1b1b;color:#ccc;border:1px solid #333;
+  border-radius:4px;padding:4px 8px;cursor:pointer;font-size:.85em;
+}
+#tournamentControls button:hover{background:#222;color:#fff;}
+
+/* ---------- Bracket viewport ---------- */
+#bracketViewport{
+  flex:1;overflow:auto;cursor:grab;
+  background:radial-gradient(circle at 30% 30%,#0e0e0e,#060606);
+}
+#bracketViewport:active{cursor:grabbing;}
+#bracketCanvas{
+  position:relative;min-width:2400px;min-height:1200px;
+  transform-origin:0 0;transition:transform .2s ease;
+}
+
+/* ---------- Match nodes ---------- */
+.matchNode{
+  position:absolute;width:160px;height:60px;background:#1a1a1a;
+  border:2px solid #333;border-radius:8px;color:#eee;font-size:.85em;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  cursor:pointer;transition:transform .2s,background .2s;
+}
+.matchNode:hover{background:#242424;transform:scale(1.05);}
+.matchNode.winner{border-color:var(--accent);background:#202020;}
+.matchNode.loser{opacity:.6;}
+
+/* ---------- Round labels ---------- */
+.roundLabel{
+  position:absolute;font-weight:bold;color:#888;font-size:.9em;
+  text-transform:uppercase;
+}
+
+/* ---------- History panel ---------- */
+#historyToggle{
+  position:absolute;bottom:14px;right:14px;background:#1b1b1b;
+  border:1px solid #333;border-radius:6px;padding:6px 10px;
+  cursor:pointer;font-size:.8em;color:#ccc;
+}
+#historyToggle:hover{background:#222;}
+#historyPanel{
+  position:absolute;bottom:50px;right:14px;width:280px;max-height:400px;
+  overflow-y:auto;background:#0e0e0e;border:1px solid #333;
+  border-radius:8px;padding:8px;display:none;font-size:.8em;
+}
+#historyPanel.open{display:block;}
+
+/* ---------- Match popup ---------- */
+#matchPopup{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,.7);display:none;align-items:center;
+  justify-content:center;z-index:9600;
+}
+#matchPopup.open{display:flex;}
+.matchInner{
+  background:#111;padding:20px;border-radius:12px;border:2px solid var(--accent);
+  text-align:center;min-width:260px;
+}
+#matchContestants img{
+  width:80px;height:80px;border-radius:50%;object-fit:cover;margin:4px;
+}
+#matchStartBattle,#matchClose{
+  margin-top:10px;padding:6px 12px;border:none;border-radius:6px;
+  background:var(--accent);color:#fff;cursor:pointer;
+}
+#matchClose{background:#333;}
+#matchClose:hover{background:#444;}
+
+/* ---------- Subtle glow on active lines ---------- */
+.connectorGlow{
+  position:absolute;height:4px;background:var(--accent);
+  opacity:.4;animation:flowLine 3s linear infinite;
+}
+@keyframes flowLine{
+  0%{opacity:.1;width:0;}
+  50%{opacity:.6;width:100%;}
+  100%{opacity:.1;width:0;}
+}
+#mainWrap {
+  transition: transform 0.3s ease;
+}
+#mainWrap.pushed {
+  transform: translateX(-280px);
+}
+</style>
+/* ===========================================================
+   CHUNK 10B – TOURNAMENT BRACKET LOGIC & INTERACTIONS
+   =========================================================== */
+
+/* ---------- Overlay Open/Close ---------- */
+const tourneyBtn=document.getElementById("tournamentBtn")||null;
+const overlay=document.getElementById("tournamentOverlay");
+const canvas=document.getElementById("bracketCanvas");
+const vp=document.getElementById("bracketViewport");
+const histBtn=document.getElementById("historyToggle");
+const histPanel=document.getElementById("historyPanel");
+
+function openTournament(){overlay.classList.add("open");buildBracket();}
+function closeTournament(){overlay.classList.remove("open");}
+document.getElementById("tournamentClose").onclick=closeTournament;
+
+/* ---------- Zoom & Pan ---------- */
+let scale=1, offsetX=0, offsetY=0, dragging=false,startX,startY;
+vp.addEventListener("wheel",e=>{
+  e.preventDefault();
+  const delta=Math.sign(e.deltaY)*-0.1;
+  scale=Math.min(2,Math.max(0.5,scale+delta));
+  canvas.style.transform=`translate(${offsetX}px,${offsetY}px) scale(${scale})`;
+});
+vp.addEventListener("mousedown",e=>{
+  dragging=true;startX=e.clientX-offsetX;startY=e.clientY-offsetY;
+});
+vp.addEventListener("mouseup",()=>dragging=false);
+vp.addEventListener("mouseleave",()=>dragging=false);
+vp.addEventListener("mousemove",e=>{
+  if(!dragging)return;
+  offsetX=e.clientX-startX;offsetY=e.clientY-startY;
+  canvas.style.transform=`translate(${offsetX}px,${offsetY}px) scale(${scale})`;
+});
+
+/* ---------- Bracket Builder ---------- */
+const maxPlayers=32;
+function buildBracket(players=loadPlayers()){
+  canvas.innerHTML="";
+  if(players.length<2){players=loadPlayers();}
+  const rounds=Math.ceil(Math.log2(players.length));
+  const matchW=180, matchH=70, hGap=220, vGap=40;
+  let matchID=0;
+  for(let r=0;r<rounds;r++){
+    const matches=Math.ceil(players.length/Math.pow(2,r+1));
+    const ySpacing=(matchH+vGap)*Math.pow(2,r);
+    for(let m=0;m<matches;m++){
+      const x=r*(matchW+hGap);
+      const y=m*ySpacing+20;
+      const node=document.createElement("div");
+      node.className="matchNode";
+      node.style.left=x+"px";node.style.top=y+"px";
+      node.dataset.round=r;node.dataset.index=m;
+      node.dataset.id=matchID++;
+      node.innerHTML=`<div class='slot slot1'></div><div class='slot slot2'></div>`;
+      node.onclick=()=>openMatch(node);
+      canvas.appendChild(node);
+      if(r===0){
+        const p1=players[m*2],p2=players[m*2+1];
+        node.querySelector(".slot1").textContent=p1?p1.name||p1:"-";
+        node.querySelector(".slot2").textContent=p2?p2.name||p2:"-";
+      }
+    }
+    const label=document.createElement("div");
+    label.className="roundLabel";
+    label.textContent=roundLabelName(r,rounds);
+    label.style.left=r*(matchW+hGap)+20+"px";
+    label.style.top="0px";
+    canvas.appendChild(label);
+  }
+  drawConnectors();
+}
+
+function roundLabelName(r,rounds){
+  const names=["Round 1","Round 2","Quarterfinals","Semifinals","Finals"];
+  return names[rounds-r-1]||`Round ${r+1}`;
+}
+
+/* ---------- Connectors ---------- */
+function drawConnectors(){
+  document.querySelectorAll(".connectorGlow").forEach(e=>e.remove());
+  const nodes=[...canvas.querySelectorAll(".matchNode")];
+  nodes.forEach(n=>{
+    const r=+n.dataset.round;
+    if(r>=nodes.length)return;
+    const next=[...nodes].find(nn=>+nn.dataset.round===r+1 && Math.floor(+nn.dataset.index/2)===Math.floor(+n.dataset.index/2));
+    if(next){
+      const line=document.createElement("div");
+      line.className="connectorGlow";
+      const x1=parseInt(n.style.left)+160, y1=parseInt(n.style.top)+30;
+      const x2=parseInt(next.style.left), y2=parseInt(next.style.top)+30+((n.dataset.index%2)?35:-35);
+      const len=Math.hypot(x2-x1,y2-y1);
+      const angle=Math.atan2(y2-y1,x2-x1)*180/Math.PI;
+      line.style.width=len+"px";
+      line.style.left=x1+"px";
+      line.style.top=y1+"px";
+      line.style.transformOrigin="0 50%";
+      line.style.transform=`rotate(${angle}deg)`;
+      canvas.appendChild(line);
+    }
+  });
+}
+
+/* ---------- Match Popup ---------- */
+const popup=document.getElementById("matchPopup");
+const matchContestants=document.getElementById("matchContestants");
+document.getElementById("matchClose").onclick=()=>popup.classList.remove("open");
+
+function openMatch(node){
+  const s1=node.querySelector(".slot1").textContent;
+  const s2=node.querySelector(".slot2").textContent;
+  matchContestants.innerHTML="";
+  [s1,s2].forEach(n=>{
+    const bio=findBio(n);
+    if(!bio)return;
+    const img=document.createElement("img");
+    img.src=bio.photo||"";
+    matchContestants.appendChild(img);
+  });
+  popup.classList.add("open");
+  document.getElementById("matchStartBattle").onclick=()=>{
+    localStorage.setItem("contestant1",JSON.stringify(findBio(s1)));
+    localStorage.setItem("contestant2",JSON.stringify(findBio(s2)));
+    popup.classList.remove("open");
+    overlay.classList.remove("open");
+    showToast(`Battle ready: ${s1} vs ${s2}`);
+  };
+}
+
+/* ---------- Helpers ---------- */
+function findBio(name){
+  const bios=JSON.parse(localStorage.getItem("contestants")||"[]");
+  return bios.find(b=>b.name===name)||{name};
+}
+function loadPlayers(){
+  const bios=JSON.parse(localStorage.getItem("contestants")||"[]");
+  return bios.slice(0,maxPlayers);
+}
+
+/* ---------- Save / Load / New / Export ---------- */
+document.getElementById("tournamentNew").onclick=()=>{
+  if(confirm("Start new tournament? Current progress will be lost.")){
+    localStorage.removeItem("bracketLayout");
+    buildBracket();
+  }
+};
+document.getElementById("tournamentSave").onclick=()=>{
+  localStorage.setItem("bracketLayout",canvas.innerHTML);
+  showToast("Bracket saved locally");
+};
+document.getElementById("tournamentLoad").onclick=()=>{
+  const html=localStorage.getItem("bracketLayout");
+  if(html){canvas.innerHTML=html;showToast("Bracket loaded");}
+};
+document.getElementById("tournamentExport").onclick=()=>{
+  html2canvas(canvas).then(canvasImg=>{
+    const link=document.createElement("a");
+    link.download="tournament.png";
+    link.href=canvasImg.toDataURL("image/png");
+    link.click();
+  });
+};
+
+/* ---------- History Panel ---------- */
+histBtn.onclick=()=>{
+  histPanel.classList.toggle("open");
+  renderHistory();
+};
+function renderHistory(){
+  const stats=JSON.parse(localStorage.getItem("battleStats")||"{}");
+  histPanel.innerHTML=Object.keys(stats).map(n=>{
+    const s=stats[n];return `<div><b>${n}</b> – ${s.wins}/${s.total} wins</div>`;
+  }).join("")||"<div>No battles recorded yet.</div>";
+}
+
+/* ---------- Animated Advance ---------- */
+window.addEventListener("battleEnd",()=>{
+  const winner=localStorage.getItem("lastWinner");
+  const nodes=[...canvas.querySelectorAll(".matchNode")];
+  const node=nodes.find(n=>[...n.querySelectorAll(".slot1,.slot2")].some(s=>s.textContent===winner));
+  if(!node)return;
+  node.classList.add("winner");
+  const r=+node.dataset.round, idx=Math.floor(+node.dataset.index/2);
+  const next=nodes.find(nn=>+nn.dataset.round===r+1&&+nn.dataset.index===idx);
+  if(next){
+    next.querySelector(`.slot${(+node.dataset.index%2)?2:1}`).textContent=winner;
+    next.animate([{transform:"scale(1.2)"},{transform:"scale(1)"}],{duration:500});
+    drawConnectors();
+    playChime();
+  }
+});
+
+/* ---------- Audio Cue ---------- */
+const chime=new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEA...");
+function playChime(){try{chime.currentTime=0;chime.play();}catch(e){}}
+/* ===========================================================
+   CHUNK 10C – VISUAL ENHANCEMENTS + LIVE THEME SYNC
+   =========================================================== */
+
+/* ---------- Inertia for Pan ---------- */
+let velX = 0, velY = 0, lastMove = 0;
+vp.addEventListener("mousemove", e => {
+  if (!dragging) return;
+  const now = performance.now();
+  const dt = now - lastMove;
+  if (dt > 0) {
+    velX = (e.movementX / dt) * 16; // normalize for frame rate
+    velY = (e.movementY / dt) * 16;
+  }
+  lastMove = now;
+});
+function animatePan() {
+  if (!dragging) {
+    offsetX += velX;
+    offsetY += velY;
+    velX *= 0.9;
+    velY *= 0.9;
+    if (Math.abs(velX) < 0.01) velX = 0;
+    if (Math.abs(velY) < 0.01) velY = 0;
+    canvas.style.transform = `translate(${offsetX}px,${offsetY}px) scale(${scale})`;
+  }
+  requestAnimationFrame(animatePan);
+}
+animatePan();
+
+/* ---------- Grid Background ---------- */
+const grid = document.createElement("canvas");
+grid.id = "gridBG";
+grid.width = 4000; grid.height = 2000;
+const gctx = grid.getContext("2d");
+function drawGrid(color="#222") {
+  gctx.clearRect(0,0,grid.width,grid.height);
+  gctx.strokeStyle = color;
+  gctx.lineWidth = 1;
+  for (let x=0; x<grid.width; x+=40){
+    gctx.beginPath(); gctx.moveTo(x,0); gctx.lineTo(x,grid.height); gctx.stroke();
+  }
+  for (let y=0; y<grid.height; y+=40){
+    gctx.beginPath(); gctx.moveTo(0,y); gctx.lineTo(grid.width,y); gctx.stroke();
+  }
+}
+drawGrid();
+grid.style.position="absolute";
+grid.style.left="0"; grid.style.top="0";
+canvas.prepend(grid);
+
+/* ---------- Parallax Grid Motion ---------- */
+function updateGridPosition(){
+  grid.style.transform = `translate(${offsetX*0.3}px,${offsetY*0.3}px)`;
+  requestAnimationFrame(updateGridPosition);
+}
+updateGridPosition();
+
+/* ---------- Dynamic Accent Sync ---------- */
+function updateBracketAccent(){
+  const accent = getComputedStyle(document.documentElement)
+    .getPropertyValue('--accent') || '#ff0099';
+  document.querySelectorAll('.matchNode.winner').forEach(n=>{
+    n.style.borderColor = accent;
+  });
+  document.querySelectorAll('.connectorGlow').forEach(l=>{
+    l.style.background = accent;
+  });
+  document.querySelectorAll('.roundLabel').forEach(lbl=>{
+    lbl.style.color = accent;
+  });
+  drawGrid(hexToRGBA(accent,0.2));
+}
+function hexToRGBA(hex,alpha){
+  hex=hex.replace('#','');
+  const r=parseInt(hex.substring(0,2),16);
+  const g=parseInt(hex.substring(2,4),16);
+  const b=parseInt(hex.substring(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+/* ---------- Winner Pulse Animation ---------- */
+function winnerPulse(){
+  document.querySelectorAll('.matchNode.winner').forEach(node=>{
+    const ring=document.createElement('div');
+    ring.className='winnerRing';
+    const rect=node.getBoundingClientRect();
+    ring.style.left=rect.left+'px';
+    ring.style.top=rect.top+'px';
+    document.body.appendChild(ring);
+    ring.animate([
+      {transform:'scale(0.5)',opacity:0.8},
+      {transform:'scale(1.5)',opacity:0}
+    ],{duration:1200,easing:'ease-out'});
+    setTimeout(()=>ring.remove(),1200);
+  });
+  requestAnimationFrame(winnerPulse);
+}
+winnerPulse();
+
+const pulseStyle=document.createElement('style');
+pulseStyle.textContent=`
+.winnerRing{
+  position:fixed;width:100px;height:100px;border:2px solid var(--accent);
+  border-radius:50%;pointer-events:none;mix-blend-mode:screen;
+}
+`;
+document.head.appendChild(pulseStyle);
+
+/* ---------- Live Theme Watcher ---------- */
+let lastAccent="";
+setInterval(()=>{
+  const accent=getComputedStyle(document.documentElement)
+    .getPropertyValue('--accent');
+  if(accent!==lastAccent){
+    lastAccent=accent;
+    updateBracketAccent();
+  }
+},500);
+/* ===========================================================
+   CHUNK 10D – CONNECTOR ANIMATION + HOVER PATH HIGHLIGHT
+   =========================================================== */
+
+/* ---------- Smooth zoom easing ---------- */
+let targetScale = scale;
+vp.addEventListener("wheel", e => {
+  e.preventDefault();
+  const delta = Math.sign(e.deltaY) * -0.15;
+  targetScale = Math.min(2.5, Math.max(0.4, targetScale + delta));
+});
+function animateZoom() {
+  scale += (targetScale - scale) * 0.15;
+  canvas.style.transform = `translate(${offsetX}px,${offsetY}px) scale(${scale})`;
+  requestAnimationFrame(animateZoom);
+}
+animateZoom();
+
+/* ---------- Hover bloom + path highlight ---------- */
+const hoverLayer = document.createElement("div");
+hoverLayer.id = "hoverLayer";
+hoverLayer.style.cssText = `
+  position:absolute;left:0;top:0;right:0;bottom:0;
+  pointer-events:none;overflow:visible;
+`;
+canvas.appendChild(hoverLayer);
+
+function highlightPath(node) {
+  clearHighlights();
+  const accent = getComputedStyle(document.documentElement)
+    .getPropertyValue('--accent') || '#ff0099';
+  const chain = [node];
+  // find forward chain (toward finals)
+  let next = findNextNode(node);
+  while (next) {
+    chain.push(next);
+    next = findNextNode(next);
+  }
+  chain.forEach((n, i) => {
+    const glow = document.createElement("div");
+    glow.className = "hoverGlow";
+    const rect = n.getBoundingClientRect();
+    glow.style.left = rect.left + "px";
+    glow.style.top = rect.top + "px";
+    glow.style.borderColor = accent;
+    hoverLayer.appendChild(glow);
+
+    if (i < chain.length - 1) {
+      const nextRect = chain[i + 1].getBoundingClientRect();
+      const line = document.createElement("div");
+      line.className = "hoverConnector";
+      const x1 = rect.left + rect.width;
+      const y1 = rect.top + rect.height / 2;
+      const x2 = nextRect.left;
+      const y2 = nextRect.top + nextRect.height / 2;
+      const len = Math.hypot(x2 - x1, y2 - y1);
+      const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+      line.style.width = len + "px";
+      line.style.left = x1 + "px";
+      line.style.top = y1 + "px";
+      line.style.transform = `rotate(${angle}deg)`;
+      line.style.borderColor = accent;
+      hoverLayer.appendChild(line);
+    }
+  });
+}
+
+function findNextNode(node) {
+  const r = +node.dataset.round;
+  const idx = Math.floor(+node.dataset.index / 2);
+  const nodes = [...canvas.querySelectorAll(".matchNode")];
+  return nodes.find(
+    n => +n.dataset.round === r + 1 && +n.dataset.index === idx
+  );
+}
+
+function clearHighlights() {
+  hoverLayer.innerHTML = "";
+}
+
+/* ---------- Hover listeners ---------- */
+canvas.addEventListener("mouseover", e => {
+  const node = e.target.closest(".matchNode");
+  if (node) highlightPath(node);
+});
+canvas.addEventListener("mouseout", e => {
+  if (e.target.closest(".matchNode")) clearHighlights();
+});
+
+/* ---------- Subtle bloom + fade ---------- */
+const hoverCSS = document.createElement("style");
+hoverCSS.textContent = `
+.hoverGlow{
+  position:fixed;width:160px;height:60px;border:2px solid var(--accent);
+  border-radius:8px;pointer-events:none;mix-blend-mode:screen;
+  filter:blur(4px);animation:bloom 1.2s ease-out infinite alternate;
+}
+@keyframes bloom{
+  from{opacity:.25;transform:scale(1);}
+  to{opacity:.5;transform:scale(1.05);}
+}
+.hoverConnector{
+  position:fixed;height:4px;border-top:2px solid var(--accent);
+  opacity:.25;animation:flow 2s linear infinite;
+  mix-blend-mode:screen;
+}
+@keyframes flow{
+  0%{opacity:.1;width:0;}
+  50%{opacity:.4;width:100%;}
+  100%{opacity:.1;width:0;}
+}
+.matchNode{
+  transition:box-shadow .25s ease;
+}
+.matchNode:hover{
+  box-shadow:0 0 14px var(--accent);
+}
+`;
+document.head.appendChild(hoverCSS);
+
+/* ---------- Adaptive fade on dense brackets ---------- */
+function adjustFade() {
+  const visibleMatches = document.querySelectorAll(".matchNode").length;
+  const fade = visibleMatches > 24 ? 0.75 : 1;
+  document.querySelectorAll(".matchNode").forEach(n => {
+    n.style.opacity = fade;
+  });
+}
+window.addEventListener("resize", adjustFade);
+adjustFade();
+<!-- ==========================================================
+     CHUNK 11A – TROPHY & CHAMPION SCREEN STRUCTURE
+     ========================================================== -->
+
+<div id="trophyOverlay">
+  <canvas id="confettiLayer"></canvas>
+  <div id="championSpotlight"></div>
+
+  <div id="championCore">
+    <img id="championPhoto" alt="Champion">
+    <h1 id="championName"></h1>
+    <h3 id="championCrew"></h3>
+    <div id="championQuote"></div>
+
+    <div id="championTrophyWrap">
+      <div id="championTrophy"></div>
+      <canvas id="signaturePad"></canvas>
+    </div>
+
+    <div id="championStats"></div>
+  </div>
+
+  <div id="championControls">
+    <button id="championSave">Save Champion</button>
+    <button id="championShare">Share Snapshot</button>
+    <button id="championClose">Close</button>
+  </div>
+
+  <div id="trophyGallery">
+    <h2>🏆 Trophy Case</h2>
+    <div id="trophyList"></div>
+  </div>
+
+  <div id="tickerBar"></div>
+</div>
+
+<style>
+/* ---------- Base overlay ---------- */
+#trophyOverlay{
+  position:fixed;inset:0;display:none;flex-direction:column;
+  background:#080808 url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCA...') repeat;
+  color:#f5f5f5;z-index:9800;overflow:hidden;
+}
+#trophyOverlay.open{display:flex;animation:fadeUp .6s ease-out;}
+@keyframes fadeUp{from{opacity:0;transform:scale(1.1);}to{opacity:1;transform:scale(1);}}
+
+/* ---------- Spotlight & photo ---------- */
+#championSpotlight{
+  position:absolute;top:0;left:0;right:0;bottom:0;
+  background:radial-gradient(circle at 50% 40%,rgba(255,215,128,.25),transparent 70%);
+  pointer-events:none;mix-blend-mode:screen;
+}
+#championCore{
+  margin:auto;text-align:center;z-index:2;
+  animation:revealChampion 1.8s ease-out forwards;
+}
+@keyframes revealChampion{
+  0%{opacity:0;transform:scale(.8);}
+  60%{opacity:1;transform:scale(1.05);}
+  100%{opacity:1;transform:scale(1);}
+}
+#championPhoto{
+  width:180px;height:180px;border-radius:50%;
+  object-fit:cover;border:4px solid var(--accent);
+  box-shadow:0 0 30px rgba(255,200,100,.3);
+  animation:photoGlow 3s ease-in-out infinite alternate;
+}
+@keyframes photoGlow{
+  from{box-shadow:0 0 15px rgba(255,200,100,.2);}
+  to{box-shadow:0 0 30px rgba(255,200,100,.45);}
+}
+#championName{font-size:2.2em;margin:.4em 0 0;color:var(--accent);}
+#championCrew{font-size:1.1em;margin:0 0 .6em;color:#ccc;font-weight:400;}
+#championQuote{font-style:italic;color:#aaa;margin-bottom:1.2em;}
+
+/* ---------- Trophy & signature ---------- */
+#championTrophyWrap{position:relative;margin:auto;width:220px;height:220px;}
+#championTrophy{
+  width:160px;height:160px;margin:auto;
+  background:linear-gradient(145deg,#9c7f45,#f1c97a);
+  border-radius:50%;box-shadow:0 0 40px rgba(255,200,100,.3);
+  animation:spinTrophy 5s linear infinite paused;
+}
+#trophyOverlay.open #championTrophy{animation-play-state:running;}
+@keyframes spinTrophy{
+  from{transform:rotateY(0deg);}
+  to{transform:rotateY(360deg);}
+}
+#signaturePad{
+  position:absolute;left:0;top:0;width:100%;height:100%;
+  cursor:crosshair;opacity:.7;
+  border-radius:50%;
+}
+
+/* ---------- Stats box ---------- */
+#championStats{
+  margin-top:1em;font-size:.9em;color:#bbb;
+  display:flex;justify-content:center;gap:14px;flex-wrap:wrap;
+}
+#championStats div{min-width:80px;padding:4px 6px;background:#111;border-radius:6px;}
+
+/* ---------- Controls ---------- */
+#championControls{
+  position:absolute;bottom:40px;left:50%;transform:translateX(-50%);
+  display:flex;gap:10px;z-index:2;
+}
+#championControls button{
+  background:#1c1c1c;color:#eee;border:1px solid #333;
+  padding:6px 14px;border-radius:6px;cursor:pointer;
+}
+#championControls button:hover{background:#272727;}
+
+/* ---------- Trophy gallery ---------- */
+#trophyGallery{
+  position:absolute;bottom:0;left:0;width:100%;
+  background:rgba(0,0,0,.4);border-top:1px solid #333;
+  padding:10px 0;overflow-x:auto;white-space:nowrap;
+}
+#trophyGallery h2{font-size:1em;color:#888;margin-left:14px;}
+#trophyList{
+  display:inline-flex;gap:10px;padding:6px 14px;
+}
+.trophyCard{
+  background:#111;border:1px solid #333;border-radius:6px;
+  padding:4px 8px;text-align:center;font-size:.75em;color:#ccc;
+  transition:transform .2s;
+}
+.trophyCard img{
+  width:40px;height:40px;border-radius:50%;object-fit:cover;margin-bottom:4px;
+}
+.trophyCard:hover{transform:scale(1.1);}
+
+/* ---------- Bottom ticker ---------- */
+#tickerBar{
+  position:absolute;bottom:0;left:0;width:100%;height:28px;
+  background:linear-gradient(90deg,#111,#000,#111);
+  color:var(--accent);font-size:.85em;line-height:28px;text-align:center;
+  white-space:nowrap;overflow:hidden;
+}
+#tickerBar span{
+  display:inline-block;animation:tickerMove 10s linear infinite;
+}
+@keyframes tickerMove{
+  0%{transform:translateX(100%);}
+  100%{transform:translateX(-100%);}
+}
+
+/* ---------- Confetti canvas ---------- */
+#confettiLayer{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  pointer-events:none;z-index:1;
+}
+
+/* ---------- Analog texture overlay ---------- */
+#trophyOverlay::after{
+  content:"";position:absolute;inset:0;
+  background:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCA...') repeat;
+  mix-blend-mode:overlay;opacity:.25;pointer-events:none;
+}
+</style>
+/* ===========================================================
+   CHUNK 11B – TROPHY & CHAMPION LOGIC + EFFECTS
+   =========================================================== */
+
+const trophyOverlay = document.getElementById("trophyOverlay");
+const confettiCanvas = document.getElementById("confettiLayer");
+const confettiCtx = confettiCanvas.getContext("2d");
+const championPhoto = document.getElementById("championPhoto");
+const championName = document.getElementById("championName");
+const championCrew = document.getElementById("championCrew");
+const championQuote = document.getElementById("championQuote");
+const championStats = document.getElementById("championStats");
+const tickerBar = document.getElementById("tickerBar");
+const trophyList = document.getElementById("trophyList");
+const sigPad = document.getElementById("signaturePad");
+let trophyCase = JSON.parse(localStorage.getItem("trophyCase") || "[]");
+
+/* ---------- Confetti physics ---------- */
+function launchConfetti(color="#ffcc66"){
+  const W = confettiCanvas.width = innerWidth;
+  const H = confettiCanvas.height = innerHeight;
+  const pieces = Array.from({length:150},()=>({
+    x:Math.random()*W,
+    y:Math.random()*-H,
+    r:Math.random()*4+2,
+    c:`hsl(${Math.random()*40+40},70%,${60+Math.random()*20}%)`,
+    vy:Math.random()*4+2,vx:(Math.random()-.5)*2,rot:Math.random()*360
+  }));
+  function draw(){
+    confettiCtx.clearRect(0,0,W,H);
+    pieces.forEach(p=>{
+      confettiCtx.save();
+      confettiCtx.translate(p.x,p.y);
+      confettiCtx.rotate(p.rot*Math.PI/180);
+      confettiCtx.fillStyle=p.c;
+      confettiCtx.fillRect(-p.r/2,-p.r/2,p.r,p.r);
+      confettiCtx.restore();
+      p.x+=p.vx;p.y+=p.vy;p.rot+=p.vy;
+    });
+    pieces.forEach(p=>{if(p.y>H)p.y=-10;});
+    requestAnimationFrame(draw);
+  }
+  draw();
+  setTimeout(()=>confettiCtx.clearRect(0,0,W,H),5000);
+}
+
+/* ---------- Voice callout ---------- */
+function calloutName(name){
+  try{
+    const utter=new SpeechSynthesisUtterance(`Champion: ${name}`);
+    utter.rate=1;utter.pitch=.9;utter.volume=1;
+    speechSynthesis.speak(utter);
+  }catch(e){console.log("voice callout failed",e);}
+}
+
+/* ---------- Pull random crate track ---------- */
+function playVictoryLoop(){
+  const crate=JSON.parse(localStorage.getItem("audioCrate")||"[]");
+  if(!crate.length)return;
+  const pick=crate[Math.floor(Math.random()*crate.length)];
+  const audio=new Audio(pick.src||pick);
+  audio.loop=true;audio.volume=0.6;
+  audio.play().catch(()=>{});
+  setTimeout(()=>audio.pause(),30000); // 30s cap
+}
+
+/* ---------- Autograph pad ---------- */
+const sigCtx=sigPad.getContext("2d");
+let drawing=false;
+sigPad.addEventListener("pointerdown",e=>{
+  drawing=true;
+  sigCtx.strokeStyle="rgba(255,220,150,.8)";
+  sigCtx.lineWidth=2;sigCtx.beginPath();
+  sigCtx.moveTo(e.offsetX,e.offsetY);
+});
+sigPad.addEventListener("pointermove",e=>{
+  if(!drawing)return;
+  sigCtx.lineTo(e.offsetX,e.offsetY);
+  sigCtx.stroke();
+});
+sigPad.addEventListener("pointerup",()=>drawing=false);
+
+/* ---------- Build champion overlay ---------- */
+function showChampion(winner){
+  championPhoto.src = winner.photo || "default.jpg";
+  championName.textContent = winner.name || "Unknown";
+  championCrew.textContent = winner.crew || "";
+  championQuote.textContent = randomQuote();
+  championStats.innerHTML = buildStatsHTML(winner.stats||{});
+  tickerBar.innerHTML = `<span>🔥 ${winner.name} takes the crown 🔥</span>`;
+  trophyOverlay.classList.add("open");
+
+  // effects
+  launchConfetti();
+  playVictoryLoop();
+  calloutName(winner.name);
+  autoSaveChampion(winner);
+}
+
+/* ---------- Build stats box ---------- */
+function buildStatsHTML(stats){
+  let html="";
+  for(const [k,v] of Object.entries(stats)){
+    html+=`<div>${k}: ${v.toFixed(2)}</div>`;
+  }
+  return html;
+}
+
+/* ---------- Random quote generator ---------- */
+const phrases=["Energy unmatched.","Sound design supremacy.","Mix so clean it glows.",
+"Drums hit like thunder.","Arrangement genius.","Basslines that breathe fire.",
+"Battle IQ on another level.","Creative control at its finest.","Versatility untouchable."];
+function randomQuote(){
+  return phrases[Math.floor(Math.random()*phrases.length)];
+}
+
+/* ---------- Auto-save champion ---------- */
+function autoSaveChampion(winner){
+  const title=`Tournament ${String(trophyCase.length+1).padStart(2,"0")} / ${new Date().getFullYear()} – Champion`;
+  const record={title, ...winner, date:Date.now()};
+  trophyCase.push(record);
+  localStorage.setItem("trophyCase",JSON.stringify(trophyCase));
+  drawTrophyList();
+}
+
+/* ---------- Trophy gallery refresh ---------- */
+function drawTrophyList(){
+  trophyList.innerHTML="";
+  trophyCase.slice().reverse().forEach(t=>{
+    const card=document.createElement("div");
+    card.className="trophyCard";
+    card.innerHTML=`
+      <img src="${t.photo||'default.jpg'}"><br>
+      <b>${t.name||'Unknown'}</b><br>
+      <small>${t.title}</small>`;
+    trophyList.appendChild(card);
+  });
+}
+drawTrophyList();
+
+/* ---------- Share Snapshot ---------- */
+document.getElementById("championShare").onclick=()=>{
+  html2canvas(trophyOverlay).then(canvas=>{
+    const link=document.createElement("a");
+    link.download=`Champion_${championName.textContent}.png`;
+    link.href=canvas.toDataURL();
+    link.click();
+  });
+};
+
+/* ---------- Close Overlay ---------- */
+document.getElementById("championClose").onclick=()=>{
+  trophyOverlay.classList.remove("open");
+  confettiCtx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+};
+
+/* ---------- Hook to battleEnd ---------- */
+window.addEventListener("battleEnd",()=>{
+  const finalist=JSON.parse(localStorage.getItem("finalWinner")||"{}");
+  if(finalist && finalist.name) showChampion(finalist);
+});
+/* ===========================================================
+   CHUNK 11C – TROPHY EVOLUTION + LEGENDARY VARIANT + TRANSITIONS
+   =========================================================== */
+
+/* ---------- Trophy evolution tiers ---------- */
+function getTrophyTier(name){
+  const wins=trophyCase.filter(t=>t.name===name).length;
+  if(wins>=6)return "diamond";
+  if(wins>=4)return "gold";
+  if(wins>=2)return "silver";
+  return "bronze";
+}
+function applyTrophyTier(el,tier){
+  const tiers={
+    bronze:"linear-gradient(145deg,#8a5a2f,#d2a679)",
+    silver:"linear-gradient(145deg,#bfc6d4,#f0f0f0)",
+    gold:"linear-gradient(145deg,#9c7f45,#f1c97a)",
+    diamond:"linear-gradient(145deg,#b6faff,#72d4ff)"
+  };
+  el.style.background=tiers[tier]||tiers.gold;
+}
+
+/* ---------- Legendary random variant ---------- */
+function maybeLegendary(){
+  if(Math.random()<0.01){
+    const fx=document.createElement("div");
+    fx.id="legendaryFx";
+    fx.style.cssText=`
+      position:absolute;inset:0;z-index:9500;
+      background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.1),transparent 80%);
+      animation:legendaryFlash 2.5s linear infinite;
+      mix-blend-mode:screen;pointer-events:none;
+    `;
+    document.body.appendChild(fx);
+    setTimeout(()=>fx.remove(),8000);
+    return true;
+  }
+  return false;
+}
+const legStyle=document.createElement("style");
+legStyle.textContent=`
+@keyframes legendaryFlash{
+  0%,100%{opacity:.2;filter:hue-rotate(0deg);}
+  50%{opacity:.6;filter:hue-rotate(120deg);}
+}`;
+document.head.appendChild(legStyle);
+
+/* ---------- Enhanced entry / exit transitions ---------- */
+function openTrophyOverlay(winner){
+  trophyOverlay.classList.add("open");
+  trophyOverlay.style.opacity="0";
+  trophyOverlay.animate([
+    {opacity:0,transform:"scale(1.1)"},
+    {opacity:1,transform:"scale(1)"}
+  ],{duration:800,easing:"ease-out"});
+  const trophy=document.getElementById("championTrophy");
+  const tier=getTrophyTier(winner.name);
+  applyTrophyTier(trophy,tier);
+  if(maybeLegendary()){
+    trophy.animate([{filter:"brightness(1.2)"},{filter:"brightness(2.5)"}],
+      {duration:1200,iterations:Infinity,direction:"alternate"});
+  }
+}
+
+/* replace call in showChampion() with this */
+function showChampion(winner){
+  championPhoto.src = winner.photo || "default.jpg";
+  championName.textContent = winner.name || "Unknown";
+  championCrew.textContent = winner.crew || "";
+  championQuote.textContent = randomQuote();
+  championStats.innerHTML = buildStatsHTML(winner.stats||{});
+  tickerBar.innerHTML = `<span>🔥 ${winner.name} takes the crown 🔥</span>`;
+
+  openTrophyOverlay(winner);
+  launchConfetti();
+  playVictoryLoop();
+  calloutName(winner.name);
+  autoSaveChampion(winner);
+}
+
+/* ---------- Smooth overlay close ---------- */
+document.getElementById("championClose").onclick=()=>{
+  trophyOverlay.animate([
+    {opacity:1,transform:"scale(1)"},
+    {opacity:0,transform:"scale(0.95)"}
+  ],{duration:600,easing:"ease-in"}).onfinish=()=>{
+    trophyOverlay.classList.remove("open");
+    confettiCtx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+  };
+};
+/* ===========================================================
+   CHUNK 11D – ACHIEVEMENTS & HISTORY INTEGRATION
+   =========================================================== */
+
+/* ---------- Extend autoSaveChampion to sync with history ---------- */
+function logAchievement(winner){
+  const history=JSON.parse(localStorage.getItem("battleHistory")||"[]");
+  const entry={
+    name:winner.name,
+    crew:winner.crew||"",
+    date:new Date().toLocaleString(),
+    score:calcAvgScore(winner.stats||{}),
+    tier:getTrophyTier(winner.name),
+    title:`${winner.name} – ${new Date().getFullYear()} Champion`,
+    quote:championQuote.textContent
+  };
+  history.push(entry);
+  localStorage.setItem("battleHistory",JSON.stringify(history));
+}
+
+/* simple average of numeric stats */
+function calcAvgScore(stats){
+  const vals=Object.values(stats);
+  if(!vals.length)return 0;
+  return vals.reduce((a,b)=>a+b,0)/vals.length;
+}
+
+/* ---------- Patch autoSaveChampion to log as well ---------- */
+function autoSaveChampion(winner){
+  const title=`Tournament ${String(trophyCase.length+1).padStart(2,"0")} / ${new Date().getFullYear()} – Champion`;
+  const record={title, ...winner, date:Date.now()};
+  trophyCase.push(record);
+  localStorage.setItem("trophyCase",JSON.stringify(trophyCase));
+  drawTrophyList();
+  logAchievement(winner);
+}
+
+/* ---------- Sync Achievements tab if open ---------- */
+function refreshAchievements(){
+  const list=document.getElementById("achievementsList");
+  if(!list)return; // skip if not loaded yet
+  list.innerHTML="";
+  const data=JSON.parse(localStorage.getItem("battleHistory")||"[]").reverse();
+  data.forEach(d=>{
+    const row=document.createElement("div");
+    row.className="achievementRow";
+    row.innerHTML=`
+      <div class="achName">${d.name}</div>
+      <div class="achTier">${d.tier}</div>
+      <div class="achScore">${d.score.toFixed(2)}</div>
+      <div class="achDate">${d.date}</div>
+      <div class="achQuote">"${d.quote}"</div>
+    `;
+    list.appendChild(row);
+  });
+}
+
+/* Auto-refresh on overlay close */
+document.getElementById("championClose").addEventListener("click",()=>{
+  refreshAchievements();
+});
+
+/* ---------- Style Achievements Rows ---------- */
+const achStyle=document.createElement("style");
+achStyle.textContent=`
+#achievementsList{display:flex;flex-direction:column;gap:4px;padding:8px;}
+.achievementRow{
+  display:grid;grid-template-columns:1.5fr .8fr .8fr 1.2fr 2fr;
+  background:#0f0f0f;border:1px solid #222;padding:6px;border-radius:6px;
+  color:#ccc;font-size:.85em;align-items:center;
+  transition:background .2s;
+}
+.achievementRow:hover{background:#1a1a1a;}
+.achTier{text-transform:capitalize;color:var(--accent);}
+.achScore{color:#ffd36a;}
+.achQuote{font-style:italic;color:#888;overflow:hidden;text-overflow:ellipsis;}
+`;
+document.head.appendChild(achStyle);
+/* ===========================================================
+   CHUNK 11E – REPLAY FINAL & ANALOG AMBIENCE
+   =========================================================== */
+
+/* ---------- Vinyl ambience ---------- */
+let crackleAudio;
+function startCrackle(){
+  if(crackleAudio){crackleAudio.pause();}
+  crackleAudio = new Audio();
+  crackleAudio.src =
+    "data:audio/wav;base64,UklGRnAAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YYAAAAD/AAD/AAD/"; 
+  // very low-level static placeholder; replace with your own base64 loop if you like
+  crackleAudio.loop = true;
+  crackleAudio.volume = 0.15;
+  crackleAudio.play().catch(()=>{});
+}
+function stopCrackle(){
+  if(crackleAudio){crackleAudio.pause();}
+}
+
+/* ---------- Inject Replay button ---------- */
+const replayBtn = document.createElement("button");
+replayBtn.id = "replayFinal";
+replayBtn.textContent = "Replay Final";
+replayBtn.style.cssText =
+  "position:absolute;bottom:80px;right:40px;padding:6px 14px;background:#1c1c1c;color:#eee;border:1px solid #333;border-radius:6px;cursor:pointer;z-index:3;";
+trophyOverlay.appendChild(replayBtn);
+
+/* ---------- Replay logic ---------- */
+replayBtn.addEventListener("click",()=>{
+  const finalist = JSON.parse(localStorage.getItem("finalWinner")||"{}");
+  if(!finalist || !finalist.name) return;
+  trophyOverlay.classList.remove("open");
+  stopCrackle();
+  confettiCtx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+  // Reset the battle decks and call Start Battle again
+  const ev = new CustomEvent("replayFinal",{detail:finalist});
+  window.dispatchEvent(ev);
+});
+
+/* ---------- Hook ambience to overlay state ---------- */
+const obs = new MutationObserver(()=>{
+  if(trophyOverlay.classList.contains("open")){
+    setTimeout(()=>startCrackle(),1200);
+  }else{
+    stopCrackle();
+  }
+});
+obs.observe(trophyOverlay,{attributes:true,attributeFilter:["class"]});
+
+/* ---------- Gentle fade on crackle volume ---------- */
+function fadeCrackle(toVol,ms){
+  if(!crackleAudio) return;
+  const steps = 20, dV = (toVol - crackleAudio.volume)/steps;
+  let i=0;
+  const fade = setInterval(()=>{
+    crackleAudio.volume += dV;
+    if(++i>=steps) clearInterval(fade);
+  },ms/steps);
+}
+window.addEventListener("battleEnd",()=>fadeCrackle(0.25,2000));
+document.getElementById("championClose").addEventListener("click",()=>fadeCrackle(0,800));
+
+/* ---------- Replay trigger for external handlers ---------- */
+// Example usage elsewhere:
+// window.addEventListener("replayFinal", e => {
+//    const champ = e.detail;
+//    // reload audio decks, photos, etc., for this champion’s final
+// });
+
+<!-- ==========================================================
+     CHUNK 12A – SETTINGS & THEME MANAGER DRAWER
+     ========================================================== -->
+
+<!-- Gear icon trigger -->
+<div id="settingsGear">⚙️</div>
+
+<!-- Slide-out drawer -->
+<div id="settingsDrawer">
+  <header>
+    <h2>Settings & Theme Manager</h2>
+    <button id="settingsClose">×</button>
+  </header>
+
+  <section>
+    <h3>Theme</h3>
+    <div class="settingRow">
+      <label>Accent Color</label>
+      <input type="color" id="accentPicker" value="#ff9900">
+    </div>
+    <div class="settingRow">
+      <label>Font</label>
+      <select id="fontSelect">
+        <option>Inter</option>
+        <option>Roboto</option>
+        <option>Space Mono</option>
+        <option>IBM Plex Sans</option>
+        <option>Playfair Display</option>
+        <option>Orbitron</option>
+      </select>
+    </div>
+    <div class="settingRow">
+      <label>Mode</label>
+      <div class="modeBtns">
+        <button class="modeBtn" data-mode="dark">Dark</button>
+        <button class="modeBtn" data-mode="dim">Dim</button>
+        <button class="modeBtn" data-mode="light">Light</button>
+      </div>
+    </div>
+    <div class="settingRow">
+      <label>Presets</label>
+      <button id="savePreset">Save Current</button>
+      <div id="presetList"></div>
+    </div>
+  </section>
+
+  <section>
+    <h3>General</h3>
+    <div class="settingRow"><label>Auto-Backup</label><input type="checkbox" id="autoBackup" checked></div>
+    <div class="settingRow"><label>Animation Intensity</label><input type="range" id="animIntensity" min="0" max="100" value="70"></div>
+    <div class="settingRow"><label>Voice Callout</label><input type="checkbox" id="voiceToggle" checked></div>
+    <div class="settingRow"><label>Ambient Volume</label><input type="range" id="ambientVol" min="0" max="1" step="0.05" value="0.2"></div>
+    <div class="settingRow"><label>Default Rounds</label><input type="number" id="defaultRounds" min="1" max="10" value="3"></div>
+    <div class="settingRow"><label>Storage Use</label><progress id="storageMeter" value="0" max="100"></progress></div>
+  </section>
+
+  <section>
+    <h3>Crate & Data</h3>
+    <div class="settingRow"><button id="exportData">Export Data (.json)</button></div>
+    <div class="settingRow"><button id="importData">Import Data</button><input type="file" id="importFile" accept=".json" hidden></div>
+    <div class="settingRow"><button id="clearData" class="danger">Clear App Data</button></div>
+  </section>
+
+  <section>
+    <h3>Extras</h3>
+    <div class="settingRow"><label>Background Theme</label>
+      <select id="bgTheme">
+        <option value="vinyl">Vinyl</option>
+        <option value="studio">Studio</option>
+        <option value="stage">Stage</option>
+      </select>
+    </div>
+    <div class="settingRow"><label>Legendary Mode</label><input type="checkbox" id="legendaryToggle" checked></div>
+    <div class="settingRow"><label>Compact UI</label><input type="checkbox" id="compactMode"></div>
+  </section>
+</div>
+
+<style>
+/* ---------- Gear icon ---------- */
+#settingsGear{
+  position:fixed;top:16px;right:18px;z-index:9700;
+  font-size:1.4em;cursor:pointer;color:var(--accent, #ff9900);
+  transition:transform .3s ease;
+}
+#settingsGear:hover{transform:rotate(90deg);}
+
+/* ---------- Drawer container ---------- */
+#settingsDrawer{
+  position:fixed;top:0;right:-360px;width:340px;height:100%;
+  background:#0c0c0c;border-left:1px solid #222;
+  box-shadow:-4px 0 16px rgba(0,0,0,.6);
+  color:#eee;font-family:Inter,sans-serif;overflow-y:auto;
+  transition:right .4s ease;z-index:9600;
+}
+#settingsDrawer.open{right:0;}
+
+/* ---------- Header ---------- */
+#settingsDrawer header{
+  position:sticky;top:0;background:#111;border-bottom:1px solid #333;
+  padding:12px 14px;display:flex;justify-content:space-between;align-items:center;
+}
+#settingsDrawer h2{font-size:1.05em;margin:0;color:var(--accent);}
+#settingsClose{background:none;border:none;color:#999;font-size:1.4em;cursor:pointer;}
+#settingsClose:hover{color:#fff;}
+
+/* ---------- Section styling ---------- */
+#settingsDrawer section{padding:10px 16px;border-bottom:1px solid #222;}
+#settingsDrawer h3{font-size:.9em;color:#bbb;margin:4px 0 8px;text-transform:uppercase;letter-spacing:.05em;}
+.settingRow{display:flex;align-items:center;justify-content:space-between;margin:6px 0;}
+.settingRow label{font-size:.85em;color:#ccc;margin-right:6px;}
+.settingRow input[type=color]{width:60px;height:26px;border:none;cursor:pointer;}
+.settingRow select,input,button{background:#111;color:#ddd;border:1px solid #333;border-radius:4px;}
+.settingRow button{padding:4px 10px;cursor:pointer;}
+.settingRow button:hover{background:#1c1c1c;}
+.modeBtns{display:flex;gap:4px;}
+.modeBtn{flex:1;padding:4px;font-size:.8em;background:#111;border:1px solid #333;border-radius:4px;cursor:pointer;}
+.modeBtn:hover{background:#1a1a1a;}
+.modeBtn.active{background:var(--accent);color:#000;font-weight:600;}
+#presetList{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.presetItem{background:#111;border:1px solid #333;border-radius:4px;padding:2px 6px;font-size:.8em;cursor:pointer;color:#ccc;}
+.presetItem:hover{background:#1c1c1c;}
+.danger{background:#400;border:1px solid #822;color:#f99;}
+.danger:hover{background:#600;}
+#storageMeter{flex:1;margin-left:10px;height:10px;}
+</style>
+/* ===========================================================
+   CHUNK 12B – SETTINGS DRAWER LOGIC + LIVE BINDINGS
+   =========================================================== */
+
+const settingsGear = document.getElementById("settingsGear");
+const drawer = document.getElementById("settingsDrawer");
+const closeBtn = document.getElementById("settingsClose");
+let smokeAppSettings = JSON.parse(localStorage.getItem("smokeAppSettings")||"{}");
+
+/* ---------- Drawer open/close ---------- */
+settingsGear.onclick = ()=>toggleDrawer(true);
+closeBtn.onclick = ()=>toggleDrawer(false);
+function toggleDrawer(state){
+  drawer.classList.toggle("open",state);
+  document.body.style.transform = state ? "translateX(-40px)" : "";
+  smokeAppSettings.drawerOpen = state;
+  saveSettings();
+}
+if(smokeAppSettings.drawerOpen) drawer.classList.add("open");
+
+/* ---------- Save / load helpers ---------- */
+function saveSettings(){
+  localStorage.setItem("smokeAppSettings",JSON.stringify(smokeAppSettings));
+}
+function applySetting(k,v){
+  smokeAppSettings[k]=v;
+  saveSettings();
+}
+
+/* ---------- Accent color live ---------- */
+const accentPicker=document.getElementById("accentPicker");
+accentPicker.addEventListener("input",()=>{
+  document.documentElement.style.setProperty("--accent",accentPicker.value);
+  applySetting("accent",accentPicker.value);
+});
+if(smokeAppSettings.accent){
+  accentPicker.value=smokeAppSettings.accent;
+  document.documentElement.style.setProperty("--accent",smokeAppSettings.accent);
+}
+
+/* ---------- Font selector ---------- */
+const fontSelect=document.getElementById("fontSelect");
+fontSelect.addEventListener("change",()=>{
+  document.body.style.fontFamily=fontSelect.value;
+  applySetting("font",fontSelect.value);
+});
+if(smokeAppSettings.font){
+  fontSelect.value=smokeAppSettings.font;
+  document.body.style.fontFamily=smokeAppSettings.font;
+}
+
+/* ---------- Mode buttons ---------- */
+document.querySelectorAll(".modeBtn").forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll(".modeBtn").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    const m=btn.dataset.mode;
+    applySetting("mode",m);
+    setMode(m);
+  };
+});
+function setMode(mode){
+  const bg=document.body.style;
+  if(mode==="dark")bg.background="#080808";
+  if(mode==="dim")bg.background="#121212";
+  if(mode==="light")bg.background="#fafafa";
+}
+if(smokeAppSettings.mode){setMode(smokeAppSettings.mode);
+  document.querySelector(`.modeBtn[data-mode="${smokeAppSettings.mode}"]`)?.classList.add("active");}
+
+/* ---------- Preset handling ---------- */
+const presetList=document.getElementById("presetList");
+document.getElementById("savePreset").onclick=()=>{
+  const name=prompt("Preset name?");
+  if(!name)return;
+  const preset={
+    name,
+    accent:accentPicker.value,
+    font:fontSelect.value,
+    mode:smokeAppSettings.mode||"dark"
+  };
+  const presets=JSON.parse(localStorage.getItem("themePresets")||"[]");
+  presets.push(preset);
+  localStorage.setItem("themePresets",JSON.stringify(presets));
+  drawPresets();
+};
+function drawPresets(){
+  presetList.innerHTML="";
+  const presets=JSON.parse(localStorage.getItem("themePresets")||"[]");
+  presets.forEach(p=>{
+    const el=document.createElement("div");
+    el.className="presetItem";
+    el.textContent=p.name;
+    el.onclick=()=>{
+      document.documentElement.style.setProperty("--accent",p.accent);
+      document.body.style.fontFamily=p.font;
+      setMode(p.mode);
+      accentPicker.value=p.accent;
+      fontSelect.value=p.font;
+      applySetting("accent",p.accent);
+      applySetting("font",p.font);
+      applySetting("mode",p.mode);
+    };
+    presetList.appendChild(el);
+  });
+}
+drawPresets();
+
+/* ---------- General toggles/sliders ---------- */
+["autoBackup","voiceToggle","legendaryToggle","compactMode"].forEach(id=>{
+  const el=document.getElementById(id);
+  el.checked = smokeAppSettings[id]??el.checked;
+  el.onchange=()=>applySetting(id,el.checked);
+});
+["animIntensity","ambientVol","defaultRounds"].forEach(id=>{
+  const el=document.getElementById(id);
+  if(smokeAppSettings[id]!=null) el.value=smokeAppSettings[id];
+  el.oninput=()=>applySetting(id,el.value);
+});
+
+/* Compact mode applies smaller UI instantly */
+document.getElementById("compactMode").addEventListener("change",e=>{
+  document.body.classList.toggle("compact",e.target.checked);
+});
+const compactStyle=document.createElement("style");
+compactStyle.textContent=`
+.compact *{font-size:.9em!important;}
+.compact button{padding:3px 6px!important;}
+`;
+document.head.appendChild(compactStyle);
+
+/* ---------- Storage meter ---------- */
+function updateStorageMeter(){
+  const total=JSON.stringify(localStorage).length;
+  const max=5_000_000; // ~5MB quota baseline
+  const pct=Math.min(100,(total/max)*100);
+  const meter=document.getElementById("storageMeter");
+  meter.value=pct;
+  meter.title=`${(total/1024).toFixed(1)} KB used`;
+}
+setInterval(updateStorageMeter,2000);
+updateStorageMeter();
+
+/* ---------- Export / Import / Clear ---------- */
+document.getElementById("exportData").onclick=()=>{
+  const data=JSON.stringify(localStorage,null,2);
+  const blob=new Blob([data],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download="WhoWantThatSmoke_backup.json";
+  a.click();URL.revokeObjectURL(url);
+};
+const importFile=document.getElementById("importFile");
+document.getElementById("importData").onclick=()=>importFile.click();
+importFile.addEventListener("change",()=>{
+  const f=importFile.files[0];
+  if(!f)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const data=JSON.parse(reader.result);
+      Object.entries(data).forEach(([k,v])=>localStorage.setItem(k,v));
+      alert("Data imported. Reloading app.");
+      location.reload();
+    }catch{alert("Invalid file.");}
+  };
+  reader.readAsText(f);
+});
+document.getElementById("clearData").onclick=()=>{
+  if(confirm("Clear all app data? This cannot be undone.")){
+    localStorage.clear();location.reload();
+  }
+};
+
+/* ---------- Background theme swap ---------- */
+const bgTheme=document.getElementById("bgTheme");
+bgTheme.onchange=()=>{
+  const val=bgTheme.value;
+  applySetting("bgTheme",val);
+  const overlay=document.getElementById("trophyOverlay");
+  if(val==="vinyl")overlay.style.background="#080808 url('vinylTex.png')";
+  if(val==="studio")overlay.style.background="#0a0a0a url('studioTex.png')";
+  if(val==="stage")overlay.style.background="#101010 url('stageTex.png')";
+};
+if(smokeAppSettings.bgTheme){
+  bgTheme.value=smokeAppSettings.bgTheme;
+  bgTheme.onchange();
+}
+/* ===========================================================
+   CHUNK 12C – DRAWER POLISH + TOASTS + BACKDROP
+   =========================================================== */
+
+/* ---------- Backdrop layer ---------- */
+const settingsBackdrop = document.createElement("div");
+settingsBackdrop.id = "settingsBackdrop";
+document.body.appendChild(settingsBackdrop);
+
+settingsBackdrop.addEventListener("click",()=>toggleDrawer(false));
+
+/* Patch toggleDrawer to handle backdrop & transitions */
+const _toggleDrawer = toggleDrawer;
+toggleDrawer = function(state){
+  drawer.classList.toggle("open",state);
+  document.body.style.transform = state ? "translateX(-40px)" : "";
+  settingsBackdrop.classList.toggle("show",state);
+  smokeAppSettings.drawerOpen = state;
+  saveSettings();
+};
+
+/* ---------- Toast system ---------- */
+let toast;
+function showToast(msg){
+  if(toast) toast.remove();
+  toast = document.createElement("div");
+  toast.className="toastMsg";
+  toast.textContent=msg;
+  document.body.appendChild(toast);
+  setTimeout(()=>toast.classList.add("show"),10);
+  setTimeout(()=>{toast.classList.remove("show");
+    setTimeout(()=>toast.remove(),400);
+  },1800);
+}
+
+/* Inject toast styling */
+const toastStyle=document.createElement("style");
+toastStyle.textContent=`
+#settingsBackdrop{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,.55);backdrop-filter:blur(2px);
+  opacity:0;pointer-events:none;transition:opacity .3s;
+  z-index:9590;
+}
+#settingsBackdrop.show{opacity:1;pointer-events:auto;}
+
+.toastMsg{
+  position:fixed;bottom:24px;right:24px;
+  background:var(--accent,#ff9900);
+  color:#000;padding:8px 14px;border-radius:6px;
+  font-weight:600;font-size:.9em;
+  opacity:0;transform:translateY(20px);
+  transition:opacity .3s, transform .3s;
+  z-index:9800;
+}
+.toastMsg.show{opacity:1;transform:translateY(0);}
+`;
+document.head.appendChild(toastStyle);
+
+/* ---------- Auto-toast on settings change ---------- */
+const observeSettings = new MutationObserver(()=>{
+  showToast("Settings saved");
+});
+observeSettings.observe(drawer,{subtree:true,childList:false,attributes:true,attributeFilter:["value","checked"]});
+<!-- ==========================================================
+     CHUNK 13A – ANALYTICS DASHBOARD (HTML + CSS SKELETON)
+     ========================================================== -->
+
+<!-- Analytics trigger button -->
+<div id="analyticsBtn">📈 Analytics</div>
+
+<!-- Analytics overlay -->
+<div id="analyticsOverlay">
+  <header>
+    <h2>Analytics Dashboard</h2>
+    <div class="toolbar">
+      <button id="analyticsRefresh">Refresh</button>
+      <button id="analyticsLiveToggle">Live Mode</button>
+      <button id="analyticsExport">Export Report</button>
+      <button id="analyticsClose">×</button>
+    </div>
+  </header>
+
+  <div id="analyticsMain">
+    <aside id="analyticsSidebar">
+      <h3>Filters</h3>
+      <div class="filterRow">
+        <label>Date Range</label>
+        <input type="date" id="startDate">
+        <input type="date" id="endDate">
+      </div>
+      <div class="filterRow">
+        <label>Player</label>
+        <select id="playerFilter"><option>All</option></select>
+      </div>
+      <div class="filterRow">
+        <label>Layout</label>
+        <button id="saveLayout">Save Layout</button>
+        <button id="resetLayout">Reset</button>
+      </div>
+      <div id="insightBox">Insights will appear here.</div>
+    </aside>
+
+    <main id="analyticsGrid">
+      <div class="chartBox" id="chartAvg">
+        <h4>Category Averages</h4><canvas></canvas>
+      </div>
+      <div class="chartBox" id="chartWinrate">
+        <h4>Win Rate Over Time</h4><canvas></canvas>
+      </div>
+      <div class="chartBox" id="chartTop">
+        <h4>Top Contestants</h4><canvas></canvas>
+      </div>
+      <div class="chartBox" id="chartRounds">
+        <h4>Round Distribution</h4><canvas></canvas>
+      </div>
+      <div class="chartBox" id="chartHeat">
+        <h4>Category Heat</h4><canvas></canvas>
+      </div>
+      <div class="chartBox" id="chartCompare">
+        <h4>Battle Comparison</h4><canvas></canvas>
+      </div>
+    </main>
+  </div>
+</div>
+
+<style>
+/* ---------- Analytics trigger ---------- */
+#analyticsBtn{
+  position:fixed;top:16px;left:18px;z-index:9600;
+  font-size:1.1em;color:var(--accent);cursor:pointer;
+  padding:4px 10px;background:#111;border:1px solid #333;
+  border-radius:6px;transition:background .3s;
+}
+#analyticsBtn:hover{background:#1c1c1c;}
+
+/* ---------- Overlay ---------- */
+#analyticsOverlay{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:#060606f0;color:#eee;z-index:9500;
+  display:none;flex-direction:column;backdrop-filter:blur(4px);
+  animation:fadeIn .4s ease;
+}
+#analyticsOverlay.open{display:flex;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+
+/* ---------- Header ---------- */
+#analyticsOverlay header{
+  display:flex;justify-content:space-between;align-items:center;
+  background:#0b0b0b;border-bottom:1px solid #222;
+  padding:10px 14px;position:sticky;top:0;z-index:10;
+}
+#analyticsOverlay h2{margin:0;font-size:1.05em;color:var(--accent);}
+#analyticsOverlay .toolbar button{
+  background:#111;border:1px solid #333;color:#ccc;
+  border-radius:4px;padding:4px 8px;margin-left:6px;cursor:pointer;
+}
+#analyticsOverlay .toolbar button:hover{background:#1a1a1a;}
+#analyticsClose{font-size:1.2em;color:#999;}
+#analyticsClose:hover{color:#fff;}
+
+/* ---------- Main layout ---------- */
+#analyticsMain{
+  display:flex;flex:1;overflow:hidden;
+  height:calc(100% - 50px);
+}
+#analyticsSidebar{
+  width:260px;background:#0c0c0c;border-right:1px solid #222;
+  padding:12px;overflow-y:auto;
+}
+#analyticsSidebar h3{font-size:.9em;color:#bbb;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;}
+.filterRow{display:flex;flex-direction:column;margin-bottom:10px;}
+.filterRow label{font-size:.8em;color:#aaa;margin-bottom:2px;}
+.filterRow input, .filterRow select, .filterRow button{
+  background:#111;color:#ddd;border:1px solid #333;border-radius:4px;
+  font-size:.85em;padding:4px 6px;
+}
+.filterRow button{margin-top:4px;}
+#insightBox{
+  margin-top:16px;padding:8px;border:1px solid #222;
+  border-radius:6px;background:#111;color:#aaa;
+  font-size:.85em;min-height:60px;
+}
+
+/* ---------- Chart grid ---------- */
+#analyticsGrid{
+  flex:1;display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  gap:10px;padding:12px;overflow-y:auto;
+}
+.chartBox{
+  background:#0d0d0d;border:1px solid #222;border-radius:8px;
+  padding:10px;display:flex;flex-direction:column;
+  transition:transform .2s;
+}
+.chartBox:hover{transform:scale(1.01);}
+.chartBox h4{margin:0 0 6px;font-size:.9em;color:#ccc;text-align:center;}
+.chartBox canvas{flex:1;background:#080808;border-radius:4px;}
+</style>
+/* ===========================================================
+   CHUNK 13B – ANALYTICS LOGIC + LIVE DATA BINDING
+   =========================================================== */
+
+/* ---------- Mini inline Chart.js (core build) ---------- */
+/* eslint-disable */
+!function(){var e=document.createElement("script");e.type="text/javascript";e.textContent=`${Chart?.version?"":(()=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/chart.js';document.head.appendChild(s);})()}`;document.head.appendChild(e);}();
+/* eslint-enable */
+
+/* ---------- Elements ---------- */
+const analyticsBtn=document.getElementById("analyticsBtn"),
+      analyticsOverlay=document.getElementById("analyticsOverlay"),
+      closeAnalytics=document.getElementById("analyticsClose"),
+      refreshBtn=document.getElementById("analyticsRefresh"),
+      liveBtn=document.getElementById("analyticsLiveToggle"),
+      exportBtn=document.getElementById("analyticsExport"),
+      playerFilter=document.getElementById("playerFilter"),
+      insightBox=document.getElementById("insightBox");
+
+let liveMode=JSON.parse(localStorage.getItem("analyticsLive")||"false");
+updateLiveButton();
+
+/* ---------- Open / Close ---------- */
+analyticsBtn.onclick=()=>analyticsOverlay.classList.add("open");
+closeAnalytics.onclick=()=>analyticsOverlay.classList.remove("open");
+
+/* ---------- Data pull ---------- */
+function getBattleData(){
+  const history=JSON.parse(localStorage.getItem("battleHistory")||"[]");
+  const trophies=JSON.parse(localStorage.getItem("trophyCase")||"[]");
+  return {history,trophies};
+}
+
+/* ---------- Chart init ---------- */
+let charts={};
+function initCharts(){
+  const ctxs=[...analyticsOverlay.querySelectorAll("canvas")];
+  ctxs.forEach(c=>{c.getContext&&c.getContext("2d");});
+  charts.avg = new Chart(document.querySelector("#chartAvg canvas"),{
+    type:"bar",data:{labels:[],datasets:[{label:"Avg Score",data:[],backgroundColor:"var(--accent)"}]},
+    options:{scales:{y:{beginAtZero:true,max:10}}}
+  });
+  charts.win = new Chart(document.querySelector("#chartWinrate canvas"),{
+    type:"line",data:{labels:[],datasets:[{label:"Wins",data:[],borderColor:"var(--accent)",tension:.3}]}
+  });
+  charts.top = new Chart(document.querySelector("#chartTop canvas"),{
+    type:"bar",data:{labels:[],datasets:[{label:"Total Points",data:[],backgroundColor:"var(--accent)"}]},
+    options:{indexAxis:"y"}
+  });
+  charts.rounds = new Chart(document.querySelector("#chartRounds canvas"),{
+    type:"pie",data:{labels:["1 Round","2 Rounds","3+"],datasets:[{data:[0,0,0],backgroundColor:["#444","#777","var(--accent)"]}]}
+  });
+  charts.heat = new Chart(document.querySelector("#chartHeat canvas"),{
+    type:"bar",data:{labels:[],datasets:[]},options:{plugins:{legend:{display:false}}}
+  });
+  charts.compare = new Chart(document.querySelector("#chartCompare canvas"),{
+    type:"bar",data:{labels:[],datasets:[]},options:{scales:{y:{beginAtZero:true,max:10}}}
+  });
+}
+
+/* ---------- Populate charts ---------- */
+function updateCharts(){
+  const {history}=getBattleData();
+  if(!history.length)return;
+  const categories=Object.keys(history[0].stats||{});
+  const avg=categories.map(cat=>{
+    const vals=history.map(h=>h.stats?.[cat]||0);
+    return vals.reduce((a,b)=>a+b,0)/vals.length;
+  });
+  charts.avg.data.labels=categories;
+  charts.avg.data.datasets[0].data=avg;
+
+  // winrate dummy timeline
+  const dates=history.map(h=>new Date(h.date).toLocaleDateString());
+  const wins=history.map((_,i)=>i+1);
+  charts.win.data.labels=dates;charts.win.data.datasets[0].data=wins;
+
+  // top contestants
+  const totals={};
+  history.forEach(h=>totals[h.name]=(totals[h.name]||0)+h.score);
+  const sorted=Object.entries(totals).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  charts.top.data.labels=sorted.map(s=>s[0]);
+  charts.top.data.datasets[0].data=sorted.map(s=>s[1]);
+
+  // round distribution
+  const dist=[0,0,0];
+  history.forEach(h=>{
+    const r=h.rounds||1;
+    if(r===1)dist[0]++;else if(r===2)dist[1]++;else dist[2]++;
+  });
+  charts.rounds.data.datasets[0].data=dist;
+
+  // heat grid – average per player per category
+  const players=[...new Set(history.map(h=>h.name))];
+  const datasets=players.map(p=>{
+    return {label:p,
+      data:categories.map(c=>{
+        const subset=history.filter(h=>h.name===p);
+        const vals=subset.map(s=>s.stats?.[c]||0);
+        return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;
+      }),
+      backgroundColor:getRandomColor()};
+  });
+  charts.heat.data.labels=categories;
+  charts.heat.data.datasets=datasets;
+
+  // comparison: top 2
+  if(sorted.length>=2){
+    const [a,b]=sorted.slice(0,2);
+    charts.compare.data.labels=["Score"];
+    charts.compare.data.datasets=[
+      {label:a[0],data:[a[1]],backgroundColor:getRandomColor()},
+      {label:b[0],data:[b[1]],backgroundColor:getRandomColor()}
+    ];
+  }
+
+  Object.values(charts).forEach(c=>c.update());
+  updateInsights(categories,avg,sorted);
+}
+
+/* ---------- Helpers ---------- */
+function getRandomColor(){
+  const h=Math.floor(Math.random()*360);
+  return `hsl(${h},70%,55%)`;
+}
+function updateInsights(cats,avgs,sorted){
+  if(!cats||!avgs)return;
+  const topCat=cats[avgs.indexOf(Math.max(...avgs))];
+  const lowCat=cats[avgs.indexOf(Math.min(...avgs))];
+  const champ=sorted[0]?.[0]||"";
+  insightBox.textContent=
+    `${champ} dominates in ${topCat}, but ${lowCat} still drags the field. Avg ${(
+      avgs.reduce((a,b)=>a+b,0)/avgs.length).toFixed(2)} overall.`;
+}
+
+/* ---------- Events ---------- */
+refreshBtn.onclick=updateCharts;
+window.addEventListener("battleEnd",updateCharts);
+liveBtn.onclick=()=>{
+  liveMode=!liveMode;
+  localStorage.setItem("analyticsLive",JSON.stringify(liveMode));
+  updateLiveButton();
+};
+function updateLiveButton(){
+  liveBtn.textContent=liveMode?"Live ON":"Live OFF";
+  liveBtn.style.background=liveMode?"var(--accent)":"#111";
+}
+if(liveMode)window.addEventListener("input",e=>{
+  if(e.target.matches(".sliderInput"))updateCharts();
+});
+
+/* ---------- Export ---------- */
+exportBtn.onclick=()=>{
+  const canvas=document.createElement("canvas");
+  const ctx=canvas.getContext("2d");
+  canvas.width=800;canvas.height=400;
+  ctx.fillStyle="#000";ctx.fillRect(0,0,800,400);
+  ctx.fillStyle="#fff";ctx.font="18px Inter";
+  ctx.fillText("Who Want That Smoke Analytics Report",20,30);
+  ctx.font="14px Inter";ctx.fillText(new Date().toLocaleString(),20,55);
+  ctx.fillText(insightBox.textContent,20,80);
+  const url=canvas.toDataURL("image/png");
+  const a=document.createElement("a");
+  a.href=url;a.download="WWTS_Analytics.png";a.click();
+};
+
+/* ---------- Init ---------- */
+initCharts();
+updateCharts();
+/* ===========================================================
+   CHUNK 13C – ANALYTICS POLISH + DYNAMIC ACCENT SYNC
+   =========================================================== */
+
+/* ---------- Global animation control ---------- */
+function animSpeed(){
+  const s=JSON.parse(localStorage.getItem("smokeAppSettings")||"{}");
+  return Math.max(100-(+s.animIntensity||70),10);
+}
+function refreshChartStyles(){
+  const accent=getComputedStyle(document.documentElement)
+                .getPropertyValue("--accent").trim();
+  Object.values(charts).forEach(c=>{
+    if(!c)return;
+    c.data.datasets.forEach(d=>{
+      if(d.borderColor!==undefined)d.borderColor=accent;
+      if(d.backgroundColor===undefined||
+         d.backgroundColor.startsWith("var(--accent"))
+        d.backgroundColor=accent;
+    });
+    c.update("none");
+  });
+}
+
+/* ---------- Theme listener ---------- */
+new MutationObserver(refreshChartStyles)
+  .observe(document.documentElement,
+           {attributes:true,attributeFilter:["style"]});
+
+/* ---------- Chart animation tuning ---------- */
+Chart.defaults.animations.colors.duration=animSpeed();
+Chart.defaults.animations.numbers.duration=animSpeed();
+Chart.defaults.plugins.legend.labels.color="#bbb";
+Chart.defaults.color="#ccc";
+Chart.defaults.font.family="Inter, sans-serif";
+
+/* ---------- Hover feedback ---------- */
+Object.values(charts).forEach(chart=>{
+  if(!chart)return;
+  chart.options.onHover=(e,els)=>{
+    e.native?.target?.style?.cursor=els.length?"pointer":"default";
+  };
+});
+
+/* ---------- Smooth overlay transitions ---------- */
+const overlayAnimStyle=document.createElement("style");
+overlayAnimStyle.textContent=`
+#analyticsOverlay{
+  opacity:0;transform:translateY(20px);
+  transition:opacity .3s ease, transform .4s ease;
+}
+#analyticsOverlay.open{
+  opacity:1;transform:translateY(0);
+}
+.chartBox{transition:box-shadow .2s, transform .25s;}
+.chartBox:hover{
+  box-shadow:0 0 12px rgba(255,255,255,.08);
+  transform:scale(1.015);
+}
+`;
+document.head.appendChild(overlayAnimStyle);
+
+/* ---------- Dynamic refresh on accent change ---------- */
+window.addEventListener("storage",e=>{
+  if(e.key==="smokeAppSettings")refreshChartStyles();
+});
+
+/* ---------- Animated toast when report exported ---------- */
+exportBtn.addEventListener("click",()=>showToast("Report exported"));
+refreshBtn.addEventListener("click",()=>showToast("Analytics refreshed"));
+liveBtn.addEventListener("click",()=>showToast(
+  liveMode?"Live Mode ON":"Live Mode OFF"));
+<!-- ==========================================================
+     CHUNK 14A – AUDIO DECKS (HTML + CSS SKELETON)
+     ========================================================== -->
+
+<div id="audioSection">
+  <div id="decks">
+    <!-- Deck A -->
+    <div class="deck" id="deckA">
+      <h3>Deck A</h3>
+      <div class="waveDisplay"><canvas></canvas></div>
+      <div class="deckControls">
+        <button class="playBtn">▶</button>
+        <button class="cueBtn">Cue</button>
+        <button class="loopBtn">Loop</button>
+        <input type="range" class="tempo" min="0.8" max="1.2" step="0.01" value="1">
+      </div>
+      <div class="deckInfo">
+        <span class="trackTitle">— No Track —</span>
+        <span class="trackBPM">BPM: —</span>
+        <span class="trackPitch">Pitch: 0%</span>
+      </div>
+      <div class="vuMeter"><div class="vuFill"></div></div>
+    </div>
+
+    <!-- Crossfader -->
+    <div id="crossfaderBox">
+      <label>Crossfader</label>
+      <input type="range" id="crossfader" min="0" max="1" step="0.01" value="0.5">
+      <div id="xfIndicator"></div>
+    </div>
+
+    <!-- Deck B -->
+    <div class="deck" id="deckB">
+      <h3>Deck B</h3>
+      <div class="waveDisplay"><canvas></canvas></div>
+      <div class="deckControls">
+        <button class="playBtn">▶</button>
+        <button class="cueBtn">Cue</button>
+        <button class="loopBtn">Loop</button>
+        <input type="range" class="tempo" min="0.8" max="1.2" step="0.01" value="1">
+      </div>
+      <div class="deckInfo">
+        <span class="trackTitle">— No Track —</span>
+        <span class="trackBPM">BPM: —</span>
+        <span class="trackPitch">Pitch: 0%</span>
+      </div>
+      <div class="vuMeter"><div class="vuFill"></div></div>
+    </div>
+  </div>
+
+  <!-- Crate Panel -->
+  <div id="cratePanel">
+    <h3>Crate</h3>
+    <div id="crateList"></div>
+    <div id="crateControls">
+      <button id="addTrack">Add Track</button>
+      <button id="randomTrack">Random from Crate</button>
+      <input type="file" id="fileInput" accept=".mp3,audio/*" hidden>
+    </div>
+  </div>
+</div>
+
+<style>
+/* ---------- Layout ---------- */
+#audioSection{
+  width:100%;background:#070707;color:#ddd;
+  display:flex;flex-direction:column;align-items:center;
+  border-top:1px solid #222;padding:10px 0;
+}
+#decks{
+  display:flex;justify-content:space-around;align-items:flex-start;
+  width:100%;max-width:1100px;gap:20px;flex-wrap:wrap;
+}
+
+/* ---------- Deck ---------- */
+.deck{
+  background:#0b0b0b;border:1px solid #222;border-radius:8px;
+  padding:10px;width:480px;min-width:300px;
+  display:flex;flex-direction:column;align-items:center;
+  box-shadow:0 0 10px rgba(0,0,0,.4);
+}
+.deck h3{margin:4px 0 8px;color:var(--accent);text-align:center;}
+.waveDisplay{width:100%;height:80px;background:#111;border-radius:4px;overflow:hidden;}
+.waveDisplay canvas{width:100%;height:100%;}
+.deckControls{display:flex;justify-content:center;gap:8px;margin:8px 0;}
+.deckControls button{
+  background:#111;border:1px solid #333;border-radius:4px;color:#eee;
+  padding:6px 10px;cursor:pointer;font-size:.85em;
+  transition:background .2s;
+}
+.deckControls button:hover{background:#1a1a1a;}
+.deckControls input[type=range]{width:80px;}
+.deckInfo{
+  font-size:.8em;color:#aaa;display:flex;justify-content:space-between;
+  width:100%;padding:0 8px;margin-top:4px;
+}
+.vuMeter{width:100%;height:8px;background:#111;border-radius:4px;overflow:hidden;margin-top:6px;}
+.vuFill{height:100%;width:0;background:var(--accent);transition:width .1s linear;}
+
+/* ---------- Crossfader ---------- */
+#crossfaderBox{
+  display:flex;flex-direction:column;align-items:center;
+  margin:12px 0;width:220px;
+}
+#crossfader{width:100%;}
+#xfIndicator{
+  width:100%;height:4px;background:linear-gradient(90deg,#333 50%,var(--accent) 50%);
+  border-radius:2px;margin-top:4px;
+}
+
+/* ---------- Crate ---------- */
+#cratePanel{
+  width:100%;max-width:800px;background:#0b0b0b;border:1px solid #222;
+  border-radius:8px;margin-top:12px;padding:10px;
+}
+#cratePanel h3{margin:0 0 8px;color:var(--accent);}
+#crateList{
+  display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;
+}
+.crateItem{
+  background:#111;border:1px solid #333;border-radius:4px;
+  padding:4px 8px;font-size:.8em;cursor:pointer;
+  transition:background .2s;
+}
+.crateItem:hover{background:#1a1a1a;}
+#crateControls{display:flex;gap:10px;justify-content:center;}
+#crateControls button{
+  background:#111;border:1px solid #333;border-radius:4px;color:#ccc;
+  padding:5px 10px;cursor:pointer;
+}
+#crateControls button:hover{background:#1c1c1c;}
+</style>
+/* ===========================================================
+   CHUNK 14B – AUDIO ENGINE + PLAYBACK CONTROL
+   =========================================================== */
+
+const AudioApp = {
+  ctx: null,
+  decks: {
+    A: { buffer: null, src: null, gainNode: null, playing: false, playbackRate: 1, cueTime: 0 },
+    B: { buffer: null, src: null, gainNode: null, playing: false, playbackRate: 1, cueTime: 0 }
+  },
+  crate: JSON.parse(localStorage.getItem("smokeCrate") || "[]"),
+};
+
+/* ---------- Init ---------- */
+function initAudioContext() {
+  if (!AudioApp.ctx) {
+    AudioApp.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    ["A","B"].forEach(k=>{
+      AudioApp.decks[k].gainNode = AudioApp.ctx.createGain();
+      AudioApp.decks[k].gainNode.connect(AudioApp.ctx.destination);
+    });
+  }
+}
+
+/* ---------- Load Track ---------- */
+function loadTrack(file, deckKey){
+  initAudioContext();
+  const reader=new FileReader();
+  reader.onload=async()=>{
+    const arr=reader.result;
+    const buffer=await AudioApp.ctx.decodeAudioData(arr);
+    const deck=AudioApp.decks[deckKey];
+    deck.buffer=buffer;
+    deck.fileName=file.name;
+    updateDeckInfo(deckKey);
+    if(!AudioApp.crate.find(t=>t.name===file.name)){
+      AudioApp.crate.push({name:file.name, data:arr});
+      localStorage.setItem("smokeCrate", JSON.stringify(AudioApp.crate));
+      renderCrate();
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* ---------- Play / Pause ---------- */
+function togglePlay(deckKey){
+  const deck=AudioApp.decks[deckKey];
+  if(!deck.buffer) return;
+  if(deck.playing){ stopDeck(deckKey); return; }
+  initAudioContext();
+  const src=AudioApp.ctx.createBufferSource();
+  src.buffer=deck.buffer;
+  src.playbackRate.value=deck.playbackRate;
+  src.connect(deck.gainNode);
+  src.onended=()=>{deck.playing=false;updatePlayBtn(deckKey,false);};
+  deck.src=src;
+  deck.playing=true;
+  deck.startTime = AudioApp.ctx.currentTime
+  src.start(0, deck.cueTime);
+  updatePlayBtn(deckKey,true);
+}
+
+function stopDeck(deckKey){
+  const deck=AudioApp.decks[deckKey];
+  if(deck.src){try{deck.src.stop();}catch(e){}}
+  deck.playing=false;
+  updatePlayBtn(deckKey,false);
+}
+
+/* ---------- Cue / Loop ---------- */
+function setCue(deckKey){
+  const deck=AudioApp.decks[deckKey];
+  if(!deck.buffer||!AudioApp.ctx)return;
+  deck.cueTime=AudioApp.ctx.currentTime%deck.buffer.duration;
+  showToast(`Cue set on Deck ${deckKey}`);
+}
+function loopToggle(deckKey, btn){
+  btn.classList.toggle("active");
+  deck.looping=btn.classList.contains("active");
+  showToast(deck.looping?`Loop ON ${deckKey}`:`Loop OFF ${deckKey}`);
+}
+
+/* ---------- Tempo ---------- */
+function setTempo(deckKey,val){
+  const deck=AudioApp.decks[deckKey];
+  deck.playbackRate=parseFloat(val);
+  if(deck.src)deck.src.playbackRate.value=deck.playbackRate;
+  updateDeckInfo(deckKey);
+}
+
+/* ---------- Info / UI ---------- */
+function updateDeckInfo(deckKey){
+  const deck=AudioApp.decks[deckKey];
+  const deckEl=document.getElementById(`deck${deckKey}`);
+  deckEl.querySelector(".trackTitle").textContent=deck.fileName||"— No Track —";
+  deckEl.querySelector(".trackPitch").textContent=`Pitch: ${((deck.playbackRate-1)*100).toFixed(1)}%`;
+}
+function updatePlayBtn(deckKey,playing){
+  const deckEl=document.getElementById(`deck${deckKey}`);
+  const btn=deckEl.querySelector(".playBtn");
+  btn.textContent=playing?"❚❚":"▶";
+}
+
+/* ---------- Crate ---------- */
+function renderCrate(){
+  const list=document.getElementById("crateList");
+  list.innerHTML="";
+  AudioApp.crate.forEach((t,i)=>{
+    const el=document.createElement("div");
+    el.className="crateItem";
+    el.textContent=t.name;
+    el.onclick=()=>assignFromCrate(i);
+    list.appendChild(el);
+  });
+}
+function assignFromCrate(index){
+  const file=AudioApp.crate[index];
+  if(!file)return;
+  const arr=file.data;
+  initAudioContext();
+  AudioApp.ctx.decodeAudioData(arr.slice(0)).then(buffer=>{
+    const deckKey=prompt("Load to deck A or B?","A");
+    if(deckKey!=="A"&&deckKey!=="B")return;
+    const deck=AudioApp.decks[deckKey];
+    deck.buffer=buffer;deck.fileName=file.name;
+    updateDeckInfo(deckKey);
+  });
+}
+
+/* ---------- Bind UI ---------- */
+["A","B"].forEach(k=>{
+  const dEl=document.getElementById(`deck${k}`);
+  dEl.querySelector(".playBtn").onclick=()=>togglePlay(k);
+  dEl.querySelector(".cueBtn").onclick=()=>setCue(k);
+  dEl.querySelector(".loopBtn").onclick=(e)=>loopToggle(k,e.target);
+  dEl.querySelector(".tempo").oninput=(e)=>setTempo(k,e.target.value);
+});
+document.getElementById("addTrack").onclick=()=>document.getElementById("fileInput").click();
+document.getElementById("fileInput").onchange=(e)=>{
+  const file=e.target.files[0];if(!file)return;
+  const deck=prompt("Load to deck A or B?","A");
+  if(deck==="A"||deck==="B")loadTrack(file,deck);
+};
+document.getElementById("randomTrack").onclick=()=>{
+  if(!AudioApp.crate.length)return;
+  const rand=Math.floor(Math.random()*AudioApp.crate.length);
+  assignFromCrate(rand);
+};
+
+/* ---------- Init Crate ---------- */
+renderCrate();
+/* ===========================================================
+   CHUNK 14C – CROSSFADER & MIXER CONTROL
+   =========================================================== */
+
+const crossfader=document.getElementById("crossfader");
+const xfIndicator=document.getElementById("xfIndicator");
+
+let masterVolume=parseFloat(localStorage.getItem("deckMasterVol")||"1.0");
+
+/* ---------- Crossfader Logic ---------- */
+crossfader.oninput=(e)=>{
+  const val=parseFloat(e.target.value);
+  const aGain=Math.cos(val*Math.PI/2);
+  const bGain=Math.cos((1-val)*Math.PI/2);
+  const A=AudioApp.decks.A.gainNode;
+  const B=AudioApp.decks.B.gainNode;
+  if(A&&B){
+    A.gain.value=aGain*masterVolume;
+    B.gain.value=bGain*masterVolume;
+  }
+  xfIndicator.style.background=
+    `linear-gradient(90deg,var(--accent) ${val*100}%,#333 ${val*100}%)`;
+  localStorage.setItem("crossfaderVal",val);
+};
+
+/* ---------- Master Volume ---------- */
+function setMasterVolume(val){
+  masterVolume=parseFloat(val);
+  localStorage.setItem("deckMasterVol",masterVolume);
+  ["A","B"].forEach(k=>{
+    const deck=AudioApp.decks[k];
+    if(deck.gainNode) deck.gainNode.gain.value=masterVolume;
+  });
+}
+
+/* ---------- VU Meter Update ---------- */
+let vuTimer=null;
+function startVU(){
+  if(vuTimer)clearInterval(vuTimer);
+  vuTimer=setInterval(()=>{
+    ["A","B"].forEach(k=>{
+      const deckEl=document.getElementById(`deck${k}`);
+      const vuFill=deckEl.querySelector(".vuFill");
+      const deck=AudioApp.decks[k];
+      if(!deck||!deck.gainNode||!AudioApp.ctx)return;
+      const level=Math.abs(deck.gainNode.gain.value||0);
+      const pulse=deck.playing?level*(Math.random()*0.4+0.6):0;
+      vuFill.style.width=`${Math.min(pulse*100,100)}%`;
+    });
+  },1000/30);
+}
+startVU();
+
+/* ---------- Safety Stop ---------- */
+function emergencyStop(){
+  ["A","B"].forEach(k=>{
+    const d=AudioApp.decks[k];
+    if(d.src){try{d.src.stop();}catch(e){}}
+    d.playing=false;
+    updatePlayBtn(k,false);
+  });
+  showToast("Emergency Stop — decks silenced");
+}
+
+/* ---------- Master Volume Control UI ---------- */
+const masterControl=document.createElement("div");
+masterControl.innerHTML=`
+  <label style="font-size:.8em;color:#888;">Master Volume</label>
+  <input id="masterVolSlider" type="range" min="0" max="1" step="0.01" value="${masterVolume}">
+  <button id="emStopBtn" style="margin-left:6px;">Stop</button>`;
+document.getElementById("crateControls").appendChild(masterControl);
+
+document.getElementById("masterVolSlider").oninput=(e)=>setMasterVolume(e.target.value);
+document.getElementById("emStopBtn").onclick=emergencyStop;
+
+/* ---------- Restore last crossfader pos ---------- */
+const lastXF=parseFloat(localStorage.getItem("crossfaderVal")||"0.5");
+crossfader.value=lastXF;
+crossfader.oninput({target:crossfader}); // set gains
+/* ===========================================================
+   CHUNK 14C – CROSSFADER & MIXER CONTROL
+   =========================================================== */
+
+const crossfader=document.getElementById("crossfader");
+const xfIndicator=document.getElementById("xfIndicator");
+
+let masterVolume=parseFloat(localStorage.getItem("deckMasterVol")||"1.0");
+
+/* ---------- Crossfader Logic ---------- */
+crossfader.oninput=(e)=>{
+  const val=parseFloat(e.target.value);
+  const aGain=Math.cos(val*Math.PI/2);
+  const bGain=Math.cos((1-val)*Math.PI/2);
+  const A=AudioApp.decks.A.gainNode;
+  const B=AudioApp.decks.B.gainNode;
+  if(A&&B){
+    A.gain.value=aGain*masterVolume;
+    B.gain.value=bGain*masterVolume;
+  }
+  xfIndicator.style.background=
+    `linear-gradient(90deg,var(--accent) ${val*100}%,#333 ${val*100}%)`;
+  localStorage.setItem("crossfaderVal",val);
+};
+
+/* ---------- Master Volume ---------- */
+function setMasterVolume(val){
+  masterVolume=parseFloat(val);
+  localStorage.setItem("deckMasterVol",masterVolume);
+  ["A","B"].forEach(k=>{
+    const deck=AudioApp.decks[k];
+    if(deck.gainNode) deck.gainNode.gain.value=masterVolume;
+  });
+}
+
+/* ---------- VU Meter Update ---------- */
+let vuTimer=null;
+function startVU(){
+  if(vuTimer)clearInterval(vuTimer);
+  vuTimer=setInterval(()=>{
+    ["A","B"].forEach(k=>{
+      const deckEl=document.getElementById(`deck${k}`);
+      const vuFill=deckEl.querySelector(".vuFill");
+      const deck=AudioApp.decks[k];
+      if(!deck||!deck.gainNode||!AudioApp.ctx)return;
+      const level=Math.abs(deck.gainNode.gain.value||0);
+      const pulse=deck.playing?level*(Math.random()*0.4+0.6):0;
+      vuFill.style.width=`${Math.min(pulse*100,100)}%`;
+    });
+  },1000/30);
+}
+startVU();
+
+/* ---------- Safety Stop ---------- */
+function emergencyStop(){
+  ["A","B"].forEach(k=>{
+    const d=AudioApp.decks[k];
+    if(d.src){try{d.src.stop();}catch(e){}}
+    d.playing=false;
+    updatePlayBtn(k,false);
+  });
+  showToast("Emergency Stop — decks silenced");
+}
+
+/* ---------- Master Volume Control UI ---------- */
+const masterControl=document.createElement("div");
+masterControl.innerHTML=`
+  <label style="font-size:.8em;color:#888;">Master Volume</label>
+  <input id="masterVolSlider" type="range" min="0" max="1" step="0.01" value="${masterVolume}">
+  <button id="emStopBtn" style="margin-left:6px;">Stop</button>`;
+document.getElementById("crateControls").appendChild(masterControl);
+
+document.getElementById("masterVolSlider").oninput=(e)=>setMasterVolume(e.target.value);
+document.getElementById("emStopBtn").onclick=emergencyStop;
+
+/* ---------- Restore last crossfader pos ---------- */
+const lastXF=parseFloat(localStorage.getItem("crossfaderVal")||"0.5");
+crossfader.value=lastXF;
+crossfader.oninput({target:crossfader}); // set gains
+/* ===========================================================
+   CHUNK 14E – CRATE MANAGER + QUALITY POLISH
+   =========================================================== */
+
+/* ---------- Render + Delete + Rename ---------- */
+function renderCrate(){
+  const list=document.getElementById("crateList");
+  list.innerHTML="";
+  AudioApp.crate.forEach((t,i)=>{
+    const el=document.createElement("div");
+    el.className="crateItem";
+    el.innerHTML=`<span class="crateName">${t.name}</span>
+                  <span class="crateOpts">✏️ ❌</span>`;
+    const [editBtn,delBtn]=el.querySelector(".crateOpts").textContent.split(" ");
+    el.querySelector(".crateName").ondblclick=()=>{
+      const newName=prompt("Rename track:",t.name);
+      if(!newName)return;
+      AudioApp.crate[i].name=newName;
+      localStorage.setItem("smokeCrate",JSON.stringify(AudioApp.crate));
+      renderCrate();
+    };
+    el.querySelector(".crateOpts").onclick=(e)=>{
+      if(e.target.textContent==="❌"){removeCrateItem(i);}
+    };
+    el.onclick=()=>assignFromCrate(i);
+    list.appendChild(el);
+  });
+}
+
+/* ---------- Remove Track ---------- */
+function removeCrateItem(index){
+  const t=AudioApp.crate[index];
+  if(!confirm(`Delete ${t.name}?`))return;
+  AudioApp.crate.splice(index,1);
+  localStorage.setItem("smokeCrate",JSON.stringify(AudioApp.crate));
+  renderCrate();
+}
+
+/* ---------- Storage Check ---------- */
+function checkStorage(){
+  const total=unescape(encodeURIComponent(JSON.stringify(localStorage))).length;
+  const kb=(total/1024).toFixed(1);
+  if(kb>4500){
+    showToast("⚠ LocalStorage almost full!");
+    if(confirm("Storage nearing limit. Export and clear crate?")){
+      exportCrate();
+      clearCrate();
+    }
+  }
+}
+function clearCrate(){
+  if(!confirm("Delete all crate files?"))return;
+  AudioApp.crate=[];
+  localStorage.setItem("smokeCrate","[]");
+  renderCrate();
+}
+
+/* ---------- Export + Import ---------- */
+function exportCrate(){
+  const blob=new Blob([JSON.stringify(AudioApp.crate)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download="WWTS_CrateBackup.json";a.click();
+  URL.revokeObjectURL(url);
+}
+function importCrate(file){
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const data=JSON.parse(reader.result);
+      if(Array.isArray(data)){
+        AudioApp.crate=data;
+        localStorage.setItem("smokeCrate",JSON.stringify(AudioApp.crate));
+        renderCrate();
+        showToast("Crate imported");
+      }
+    }catch(e){showToast("Invalid crate file");}
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- Extra Controls ---------- */
+const extraBtns=document.createElement("div");
+extraBtns.id="crateExtras";
+extraBtns.innerHTML=`
+  <button id="exportCrate">Export</button>
+  <button id="importCrateBtn">Import</button>
+  <input type="file" id="importCrateFile" accept=".json" hidden>
+  <button id="clearCrateBtn">Clear</button>`;
+document.getElementById("crateControls").appendChild(extraBtns);
+
+document.getElementById("exportCrate").onclick=exportCrate;
+document.getElementById("importCrateBtn").onclick=
+  ()=>document.getElementById("importCrateFile").click();
+document.getElementById("importCrateFile").onchange=
+  e=>importCrate(e.target.files[0]);
+document.getElementById("clearCrateBtn").onclick=clearCrate;
+
+/* ---------- Visual Polish ---------- */
+const crateStyle=document.createElement("style");
+crateStyle.textContent=`
+.crateItem{
+  position:relative;padding-right:20px;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.crateOpts{opacity:0;transition:opacity .2s;}
+.crateItem:hover .crateOpts{opacity:1;}
+#crateExtras{display:flex;gap:6px;margin-top:6px;justify-content:center;}
+#crateExtras button{
+  background:#111;border:1px solid #333;border-radius:4px;color:#ccc;
+  padding:4px 8px;font-size:.75em;cursor:pointer;
+}
+#crateExtras button:hover{background:#1a1a1a;}
+`;
+document.head.appendChild(crateStyle);
+
+/* ---------- Periodic Storage Check ---------- */
+setInterval(checkStorage,10000);
+/* ===========================================================
+   CHUNK 15 – FINAL INTEGRATION + POLISH
+   =========================================================== */
+
+/* ---------- Deck ↔ Battle Hooks ---------- */
+// When a battle starts, remember active track names
+window.addEventListener("battleStart",()=>{
+  const A=AudioApp.decks.A.fileName||"—";
+  const B=AudioApp.decks.B.fileName||"—";
+  sessionStorage.setItem("battleDeckA",A);
+  sessionStorage.setItem("battleDeckB",B);
+});
+
+// When battle ends, tag result with track info
+window.addEventListener("battleEnd",()=>{
+  const hist=JSON.parse(localStorage.getItem("battleHistory")||"[]");
+  if(hist.length){
+    const last=hist[hist.length-1];
+    last.deckA=sessionStorage.getItem("battleDeckA");
+    last.deckB=sessionStorage.getItem("battleDeckB");
+    localStorage.setItem("battleHistory",JSON.stringify(hist));
+  }
+});
+
+/* ---------- Settings Drawer Hooks ---------- */
+function linkSettingsToDecks(){
+  const s=JSON.parse(localStorage.getItem("smokeAppSettings")||"{}");
+  if(s.deckVolume!==undefined)setMasterVolume(s.deckVolume);
+  if(s.animIntensity!==undefined){
+    Chart.defaults.animations.colors.duration=100-(s.animIntensity||70);
+  }
+  if(s.themeAccent){
+    document.documentElement.style.setProperty("--accent",s.themeAccent);
+    refreshChartStyles();
+  }
+}
+window.addEventListener("storage",e=>{
+  if(e.key==="smokeAppSettings")linkSettingsToDecks();
+});
+linkSettingsToDecks();
+
+/* ---------- Persistent Theme Sync ---------- */
+window.addEventListener("DOMContentLoaded",()=>{
+  const accent=localStorage.getItem("themeAccent");
+  if(accent)document.documentElement.style.setProperty("--accent",accent);
+});
+
+/* ---------- Global Shortcuts ---------- */
+document.addEventListener("keydown", e => {
+  if(e.target.tagName==="INPUT" || e.target.tagName==="TEXTAREA") return;
+  if(["arrowleft","arrowright"].includes(e.key.toLowerCase())) e.preventDefault();
+
+  switch(e.key.toLowerCase()){
+    case "a": togglePlay("A"); break;
+    case "s": stopDeck("A"); break;
+    case "k": togglePlay("B"); break;
+    case "l": stopDeck("B"); break;
+    case "arrowleft":
+      crossfader.value=Math.max(0,parseFloat(crossfader.value)-0.05);
+      crossfader.oninput({target:crossfader});
+      break;
+    case "arrowright":
+      crossfader.value=Math.min(1,parseFloat(crossfader.value)+0.05);
+      crossfader.oninput({target:crossfader});
+      break;
+  }
+});
+
+/* ---------- Unified Toast Overlay ---------- */
+if(!document.getElementById("toastArea")){
+  const toast=document.createElement("div");
+  toast.id="toastArea";
+  toast.style.cssText=`
+    position:fixed;bottom:15px;left:50%;transform:translateX(-50%);
+    background:#111;color:#fff;padding:6px 14px;border-radius:6px;
+    opacity:0;transition:opacity .3s;pointer-events:none;font-size:.85em;z-index:9999;`;
+  document.body.appendChild(toast);
+}
+window.showToast=function(msg){
+  const t=document.getElementById("toastArea");
+  t.textContent=msg;t.style.opacity=1;
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.style.opacity=0,1800);
+};
+
+/* ---------- Subtle UI Refinements ---------- */
+const polishStyle=document.createElement("style");
+polishStyle.textContent=`
+button, input[type=range]{transition:filter .2s;}
+button:hover, input[type=range]:hover{filter:brightness(1.2);}
+.deck:hover{box-shadow:0 0 14px rgba(255,255,255,.05);}
+#crossfaderBox label{font-size:.8em;color:#888;margin-bottom:3px;}
+`;
+document.head.appendChild(polishStyle);
+
+/* ---------- Final Startup ---------- */
+console.log("%cWho Want That Smoke — Ready.","color:var(--accent);font-weight:bold;");
+showToast("WWTS loaded successfully");
+/* ===========================================================
+   CHUNK 16 – FINAL POLISH & SMALL FIXES
+   =========================================================== */
+
+/* ---------- Real Playhead Progress ---------- */
+function startWaveAnim(){
+  if(waveAnim)cancelAnimationFrame(waveAnim);
+  const draw=()=>{
+    ["A","B"].forEach(k=>{
+      const deck=AudioApp.decks[k];
+      const waveCanvas=document.querySelector(`#deck${k} .waveDisplay canvas`);
+      if(!deck.buffer||!deck.src)return;
+      const ctx=waveCanvas.getContext("2d");
+      const w=waveCanvas.width, h=waveCanvas.height;
+      const accent=getComputedStyle(document.documentElement)
+                   .getPropertyValue("--accent").trim()||"#0ff";
+      // redraw base waveform faintly
+      ctx.globalAlpha=.15;
+      ctx.fillStyle="#000";
+      ctx.fillRect(0,0,w,h);
+      ctx.globalAlpha=1;
+      // progress bar
+      const dur=deck.buffer.duration;
+      const elapsed=(AudioApp.ctx.currentTime - (deck.startTime||0));
+      const pos=Math.min(elapsed/dur,1)*w;
+      ctx.strokeStyle=accent;
+      ctx.beginPath();ctx.moveTo(pos,0);ctx.lineTo(pos,h);ctx.stroke();
+    });
+    waveAnim=requestAnimationFrame(draw);
+  };
+  waveAnim=requestAnimationFrame(draw);
+}
+
+/* ---------- BPM Normalize ---------- */
+function estimateBPM(buffer){
+  const data=buffer.getChannelData(0);
+  const sampleRate=buffer.sampleRate;
+  const block=1024, step=512;
+  let peaks=[],prev=0;
+  for(let i=0;i<data.length;i+=step){
+    let sum=0;
+    for(let j=0;j<block;j++)sum+=Math.abs(data[i+j]||0);
+    const avg=sum/block;
+    if(avg>prev*1.3)peaks.push(i/sampleRate);
+    prev=avg;
+  }
+  if(peaks.length<2)return null;
+  const intervals=[];
+  for(let i=1;i<peaks.length;i++)intervals.push(peaks[i]-peaks[i-1]);
+  const median=intervals.sort((a,b)=>a-b)[Math.floor(intervals.length/2)];
+  if(!median)return null;
+  let bpm=60/median;
+  while(bpm<90)bpm*=2;
+  while(bpm>180)bpm/=2;
+  return Math.round(bpm);
+}
+
+/* ---------- Battle Start Audio Fade ---------- */
+window.addEventListener("battleStart",()=>{
+  const A=AudioApp.decks.A.gainNode, B=AudioApp.decks.B.gainNode;
+  if(A&&B){
+    A.gain.linearRampToValueAtTime(0.8,AudioApp.ctx.currentTime+1);
+    B.gain.linearRampToValueAtTime(0.8,AudioApp.ctx.currentTime+1);
+  }
+});
+
+/* ---------- Crate Compression Toggle ---------- */
+if(!localStorage.getItem("crateCompression")){
+  localStorage.setItem("crateCompression","false");
+}
+function toggleCrateCompression(){
+  const flag=localStorage.getItem("crateCompression")==="true"?"false":"true";
+  localStorage.setItem("crateCompression",flag);
+  showToast(`Crate compression ${flag==="true"?"ON":"OFF"}`);
+}
+const compBtn=document.createElement("button");
+compBtn.textContent="Compress Crate";
+compBtn.onclick=toggleCrateCompression;
+document.getElementById("crateExtras").appendChild(compBtn);
+
+/* ---------- Settings Auto-save Tick ---------- */
+document.querySelectorAll("#settingsDrawer input, #settingsDrawer select")
+  .forEach(el=>{
+    el.addEventListener("change",()=>{
+      const tick=document.createElement("span");
+      tick.textContent="✓";
+      tick.style.cssText="color:var(--accent);margin-left:4px;font-weight:bold;";
+      el.parentElement.appendChild(tick);
+      setTimeout(()=>tick.remove(),800);
+    });
+});
+
+/* ---------- Deck Flex Wrap Fix for Mobile ---------- */
+const fixStyle=document.createElement("style");
+fixStyle.textContent=`
+@media(max-width:900px){
+  #decks{flex-direction:column;align-items:center;}
+  .deck{width:95%;}
+}
+`;
+document.head.appendChild(fixStyle);
+
+/* ---------- ChartJS Refresh Stub (if Analytics active) ---------- */
+function refreshChartStyles(){
+  if(window.Chart && Chart.instances && Object.keys(Chart.instances).length){
+    Chart.helpers.each(Chart.instances, inst => inst.update());
+  }
+}
+
+/* ---------- Ready Message ---------- */
+console.log("%cFinal polish applied – system stable","color:var(--accent)");
+showToast("WWTS polished and ready.");
